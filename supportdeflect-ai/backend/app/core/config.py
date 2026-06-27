@@ -30,6 +30,7 @@ class Settings(BaseSettings):
             "http://localhost:8000",
         ]
     )
+    enforce_trusted_hosts: bool = False
     trusted_hosts: list[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1", "*.localhost"])
 
     secret_key: str = "CHANGE_ME_WITH_A_LONG_RANDOM_SECRET"
@@ -134,8 +135,8 @@ class Settings(BaseSettings):
             errors.append("RATE_LIMIT_PROVIDER must be database in production")
         if any("localhost" in origin or "127.0.0.1" in origin for origin in self.cors_origins):
             errors.append("CORS_ORIGINS must not include localhost in production")
-        if not self.trusted_hosts or "*" in self.trusted_hosts:
-            errors.append("TRUSTED_HOSTS must be explicit in production")
+        if self.enforce_trusted_hosts and (not self.trusted_hosts or "*" in self.trusted_hosts):
+            errors.append("TRUSTED_HOSTS must be explicit when ENFORCE_TRUSTED_HOSTS is true")
         if errors:
             raise ValueError("; ".join(errors))
         return self
