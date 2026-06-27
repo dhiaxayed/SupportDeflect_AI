@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+  worker:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    command: ["python", "scripts/run_ingestion_worker.py"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  frontend:
+    build:
+      context: ../learn-serve-main/learn-serve-main
+      args:
+        VITE_API_URL: http://localhost:8000/api/v1
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+    restart: unless-stopped
+    ports:
+      - "5173:3000"
+    depends_on:
+      - backend

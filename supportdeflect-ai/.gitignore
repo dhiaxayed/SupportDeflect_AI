@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+*.db
+*.sqlite
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Environment
+.env
+backend/.env
+frontend/.env
+
+# Vector store / local data
+backend/.chroma/
+.chroma/
+uploads/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

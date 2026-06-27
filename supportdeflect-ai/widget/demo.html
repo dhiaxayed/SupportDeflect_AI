@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SupportDeflect AI Widget Demo</title>
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+    main { max-width: 860px; margin: 80px auto; padding: 0 24px; }
+    .hero { background: white; border: 1px solid #e2e8f0; border-radius: 28px; padding: 42px; box-shadow: 0 20px 60px rgba(15,23,42,.08); }
+    code { background: #eef2ff; padding: 2px 6px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>SupportDeflect AI widget demo</h1>
+      <p>Replace <code>company_xxx</code> below with the public company id displayed in the admin dashboard.</p>
+      <p>The floating chat bubble should appear in the bottom-right corner.</p>
+    </section>
+  </main>
+
+  <script src="http://localhost:8000/api/v1/widget/script.js" data-company="company_xxx" data-api-base="http://localhost:8000"></script>
+</body>
+</html>
