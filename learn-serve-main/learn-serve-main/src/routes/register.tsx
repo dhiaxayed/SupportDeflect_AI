@@ -53,6 +53,7 @@ function Register() {
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 placeholder="Acme Inc."
+                autoComplete="organization"
                 required
               />
             </div>
@@ -64,6 +65,7 @@ function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -75,6 +77,7 @@ function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 8 characters"
+                autoComplete="new-password"
                 required
               />
             </div>
