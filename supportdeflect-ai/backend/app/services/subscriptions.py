@@ -29,10 +29,10 @@ PLANS: dict[str, PlanLimits] = {
     "trial": PlanLimits(
         name="trial",
         label="Free Trial",
-        max_documents=3,
-        max_chunks=200,
+        max_documents=25,
+        max_chunks=2_000,
         max_questions_per_month=100,
-        max_upload_bytes=2 * 1024 * 1024,
+        max_upload_bytes=10 * 1024 * 1024,
         advanced_analytics=True,
         manual_upgrade_label="Contact us to unlock more usage",
     ),
