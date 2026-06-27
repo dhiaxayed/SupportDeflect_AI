@@ -17,8 +17,10 @@ FROM node:20-alpine AS runtime
 
 ENV NODE_ENV=production
 WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server.mjs ./server.mjs
+COPY package.json ./package.json
 
 EXPOSE 3000
 CMD ["node", "server.mjs"]
