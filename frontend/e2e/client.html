@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Independent browser-test customer page served by e2e/start-api.mjs on a separate port.
+  The harness replaces WIDGET_SNIPPET with Studio's exact script tag. This page deliberately
+  has unrelated fonts and hostile global CSS to prove the widget's host/shadow isolation;
+  it has no React application, administrator session or frontend build dependency.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Independent client website</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 40px;
+        font:
+          16px Georgia,
+          serif;
+        background: #e8f4ed;
+        color: #15281c;
+      }
+      h1 {
+        font-size: 32px;
+        max-width: 700px;
+      }
+      /* Deliberately hostile rules verify shadow-root and host isolation. */
+      div {
+        color: red !important;
+        font-size: 70px !important;
+        position: static !important;
+      }
+      button,
+      textarea,
+      img {
+        display: none !important;
+        width: 900px !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Independent client website</h1>
+      <p>Customer documentation and support.</p>
+    </main>
+    <!-- WIDGET_SNIPPET -->
+  </body>
+</html>

@@ -1,0 +1,5 @@
+# Optional Bun installation policy for developers using Bun instead of npm.
+# Runtime/build commands remain defined by package.json and the committed package lock.
+[install]
+# 24h supply-chain guard: skip package versions published less than a day ago.
+minimumReleaseAge = 86400

@@ -1,0 +1,23 @@
+# Optional HTTPS overlay; combine with docker-compose.yml for every operation via the same COMPOSE_FILE.
+# Supply trusted server.crt/server.key under infra/certs and set PUBLIC_URL to the HTTPS browser origin.
+# docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+services:
+  traefik:
+    # This list replaces base Traefik arguments; port 80 redirects to the TLS entrypoint on 443.
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.transport.respondingtimeouts.readtimeout=180s
+      - --entrypoints.websecure.transport.respondingtimeouts.writetimeout=180s
+      - --ping=true
+      - --api.dashboard=false
+      - --accesslog=true
+    # Compose merges this publication with the base port 80 mapping; no application/database port is exposed.
+    ports: ["443:443"]
+    # Keep routing and private key material read-only in Traefik; certificates are neither generated nor trusted here.
+    volumes:
+      - ./infra/traefik/tls.yml:/etc/traefik/dynamic/tls.yml:ro
+      - ./infra/certs:/etc/traefik/certs:ro

@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- Independent example customer page. Query parameters choose the public company
+     identifier and HTTP(S) API origin; validation below controls widget loading.
+     This page contains no private API key and is not a tenant administration UI. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acme Customer Portal</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f8faf9; color: #172923; }
+    header, main { max-width: 860px; margin: auto; padding: 28px 24px; }
+    header { border-bottom: 1px solid #d6ded9; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    img { width: 150px; max-width: 40%; height: auto; }
+    h1 { font-size: 28px; margin: 24px 0; }
+    h2 { font-size: 18px; }
+    section { border-top: 1px solid #d6ded9; padding: 20px 0; }
+    p { line-height: 1.6; max-width: 65ch; }
+    #status { color: #a33b32; }
+  </style>
+</head>
+<body>
+  <header><strong>Acme</strong><img src="supportdeflect-logo.png" alt="SupportDeflect AI" /></header>
+  <main>
+    <h1>Customer Portal</h1>
+    <section><h2>Account support</h2><p>Questions about your account, your workspace or a product setting?</p></section>
+    <section><h2>Contact</h2><p>Our support team is available Monday to Friday.</p></section>
+    <p id="status" role="status"></p>
+  </main>
+  <script>
+    // Validate embedding inputs before creating the shared public widget script.
+    // Public company identifiers locate configuration; they are not account secrets.
+    const params = new URLSearchParams(window.location.search);
+    const company = params.get("company");
+    const api = params.get("api");
+    try {
+      if (!company || !/^company_[a-zA-Z0-9_-]+$/.test(company)) throw new Error("Company is unavailable.");
+      const origin = new URL(api);
+      if (!["http:", "https:"].includes(origin.protocol) || origin.username || origin.password) {
+        throw new Error("Support service is unavailable.");
+      }
+      const script = document.createElement("script");
+      script.src = origin.origin + "/api/v1/widget/script.js";
+      script.dataset.company = company;
+      script.onerror = () => { document.querySelector("#status").textContent = "Support service is unavailable."; };
+      document.body.appendChild(script);
+    } catch (error) {
+      document.querySelector("#status").textContent = error.message;
+    }
+  </script>
+</body>
+</html>

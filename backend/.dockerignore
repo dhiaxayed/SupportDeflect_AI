@@ -1,0 +1,20 @@
+# Exclusions for the backend-directory Docker context; the root .dockerignore does not govern this context.
+# Keep environment secrets, native databases, logs and host-only Python tooling out of image inputs.
+# All .env variants are runtime inputs, never baked into this image.
+.env
+.env.*
+# Native database files are deployment state, not an installation artifact.
+*.db
+*.sqlite
+logs
+# The Dockerfile creates its own Linux virtual environment; host environments/caches are not reusable.
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+supportdeflect.db
+.chroma
+uploads

@@ -1,0 +1,31 @@
+# Pinned production Python dependencies shared by API, migration and ingestion images/processes.
+# Install the separately pinned CPU PyTorch wheel first as shown in Dockerfile/CI; no hosted embedding API is used.
+# HTTP routing/validation and the production ASGI server.
+fastapi==0.141.1
+uvicorn[standard]==0.32.1
+# Relational persistence, versioned schema upgrades and the PostgreSQL psycopg driver.
+SQLAlchemy==2.0.36
+alembic==1.14.0
+psycopg[binary]==3.2.3
+# Typed environment/email validation and authentication/encrypted invitation primitives.
+pydantic-settings==2.15.0
+email-validator==2.2.0
+PyJWT[crypto]==2.15.0
+cryptography==50.0.1
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+# Multipart file uploads; password byte limits are enforced before the pinned bcrypt backend.
+python-multipart==0.0.32
+# Local semantic retrieval stack and lexical BM25 ranking; model weights are cached separately from packages.
+sentence-transformers==6.1.0
+rank-bm25==0.2.2
+transformers==5.17.0
+# Explicit compatibility/security-reviewed packaging dependency pin; rerun audits before changing versions.
+setuptools==84.0.0
+# Generation SDK and bounded HTTP transports; runtime credentials are provided outside source control.
+groq==0.13.1
+httpx==0.28.1
+# HTML extraction, PDF text parsing and safe raster logo decoding/re-encoding.
+beautifulsoup4==4.12.3
+pypdf==6.19.0
+Pillow==12.3.0

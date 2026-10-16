@@ -1,0 +1,226 @@
+# Canonical Linux stack: Traefik is the only published ingress; application state uses named local volumes.
+# Requires Docker Engine/Compose, generated root .env secrets and initial package/model Internet downloads.
+# Validate with config --quiet; expanded Compose output contains interpolated credentials.
+name: supportdeflect
+
+# Shared container log rotation: each service retains at most five 10 MB json-file log segments.
+x-logging: &local-logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# API, migration and ingestion worker share persistence/provider invariants; schema upgrades are a separate job.
+x-app-environment: &app-environment
+  ENVIRONMENT: ${ENVIRONMENT:-production}
+  DEBUG: "false"
+  DOCS_ENABLED: "false"
+  INIT_DATABASE_ON_STARTUP: "false"
+  SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-supportdeflect}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-supportdeflect}
+  LLM_PROVIDER: groq
+  GROQ_MODEL: ${GROQ_MODEL:?Set GROQ_MODEL in .env}
+  # Groq request timeout is seconds; output budget is tokens and optional reasoning depends on the selected model.
+  GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-30}
+  GROQ_MAX_TOKENS: ${GROQ_MAX_TOKENS:-2048}
+  GROQ_REASONING_EFFORT: ${GROQ_REASONING_EFFORT:-}
+  WIDGET_ASSETS_DIRECTORY: /app/data/widget-assets
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  EMBEDDING_PROVIDER: sentence-transformers
+  EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+  # The PostgreSQL vector schema is fixed at 384 dimensions; model identity changes need passage reindexing.
+  EMBEDDING_DIMENSION: "384"
+  # Passage/candidate counts and character budgets cap retrieval context; they are not confidence probabilities.
+  RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-5}
+  RETRIEVAL_CANDIDATE_LIMIT: ${RETRIEVAL_CANDIDATE_LIMIT:-200}
+  RAG_CONTEXT_MAX_CHARS: ${RAG_CONTEXT_MAX_CHARS:-10000}
+  RAG_HISTORY_MAX_CHARS: ${RAG_HISTORY_MAX_CHARS:-4000}
+  ALLOW_FAKE_EMBEDDINGS_FALLBACK: "false"
+  VECTOR_PROVIDER: database
+  RATE_LIMIT_PROVIDER: database
+  INGESTION_MODE: queued
+  # Persistent model cache is mounted by API/worker; offline mode only works after the initial download.
+  HF_HOME: /home/appuser/.cache/huggingface
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+  # Dashboard same-origin CORS and trusted Host policy are separate from per-tenant public-widget origins.
+  CORS_ORIGINS: ${CORS_ORIGINS:-[]}
+  TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,backend}
+  ENFORCE_TRUSTED_HOSTS: "true"
+  BACKEND_PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
+  FRONTEND_URL: ${PUBLIC_URL:-http://localhost}
+  # Upload size is bytes, throttles are requests/minute, and mail quota is messages in the rolling delivery window.
+  MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-104857600}
+  WIDGET_RATE_LIMIT_PER_MINUTE: ${WIDGET_RATE_LIMIT_PER_MINUTE:-20}
+  ADMIN_RATE_LIMIT_PER_MINUTE: ${ADMIN_RATE_LIMIT_PER_MINUTE:-120}
+  MAILER_SERVICE_TOKEN: ${MAILER_SERVICE_TOKEN:?Set MAILER_SERVICE_TOKEN in .env}
+  MAIL_FROM: ${SMTP_FROM:-dhiaayed03@gmail.com}
+  MAIL_DAILY_LIMIT: ${MAIL_DAILY_LIMIT:-400}
+
+services:
+  # Static file discovery avoids exposing the Docker socket; long body read/write limits are 180 seconds.
+  traefik:
+    logging: *local-logs
+    image: traefik:v3.7.13
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.transport.respondingtimeouts.readtimeout=180s
+      - --entrypoints.web.transport.respondingtimeouts.writetimeout=180s
+      - --ping=true
+      - --api.dashboard=false
+      - --accesslog=true
+    ports: ["80:80"]
+    volumes: ["./infra/traefik/routes.yml:/etc/traefik/dynamic/routes.yml:ro"]
+    networks:
+      edge_net:
+        ipv4_address: ${TRAEFIK_IPV4:-172.30.80.2}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Database has no published host port; pg_isready expands container variables via escaped Compose dollars.
+  postgres:
+    logging: *local-logs
+    image: pgvector/pgvector:0.8.6-pg17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-supportdeflect}
+      POSTGRES_USER: ${POSTGRES_USER:-supportdeflect}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    networks: [data_net]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # One-shot Alembic gate: API/worker start only after a successful upgrade against healthy PostgreSQL.
+  migrate:
+    logging: *local-logs
+    image: supportdeflect-backend:local
+    build: ./backend
+    environment: *app-environment
+    command: ["alembic", "upgrade", "head"]
+    networks: [data_net]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+
+  # API trusts forwarded headers only from the fixed Traefik address; health requires current database/schema.
+  backend:
+    logging: *local-logs
+    image: supportdeflect-backend:local
+    build: ./backend
+    environment:
+      <<: *app-environment
+      FORWARDED_ALLOW_IPS: ${TRAEFIK_IPV4:-172.30.80.2}
+    volumes: ["hf_cache:/home/appuser/.cache/huggingface", "widget_assets:/app/data/widget-assets"]
+    networks: [edge_net, data_net]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/db', timeout=4)"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 5m
+
+  # Separate durable ingestion process; heartbeat age is seconds and allows long local embedding batches.
+  worker:
+    logging: *local-logs
+    image: supportdeflect-backend:local
+    build: ./backend
+    environment: *app-environment
+    command: ["python", "scripts/run_ingestion_worker.py"]
+    volumes: ["hf_cache:/home/appuser/.cache/huggingface"]
+    networks: [data_net]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import time,pathlib; p=pathlib.Path('/tmp/supportdeflect-worker-heartbeat'); assert p.exists() and time.time()-p.stat().st_mtime < 600"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5m
+
+  # Token-authenticated delivery worker reaches only backend/SMTP; unencrypted capture is intentionally local.
+  mailer:
+    logging: *local-logs
+    build:
+      context: .
+      dockerfile: mailer/Dockerfile
+    environment:
+      MAILER_API_URL: http://backend:8000/api/v1
+      MAILER_SERVICE_TOKEN: ${MAILER_SERVICE_TOKEN:?Set MAILER_SERVICE_TOKEN in .env}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_ALLOW_INSECURE_LOCAL: "true"
+      SMTP_FROM: ${SMTP_FROM:-dhiaayed03@gmail.com}
+    networks: [data_net]
+    depends_on:
+      backend: {condition: service_healthy}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const fs=require('fs');const p='/tmp/supportdeflect-mailer-heartbeat';if(!fs.existsSync(p)||Date.now()-Number(fs.readFileSync(p,'utf8'))>120000)process.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Capture is persistent and UI-authenticated under /mail; no configured outbound SMTP relay is present.
+  mailpit:
+    logging: *local-logs
+    image: axllent/mailpit:v1.31.3
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_WEBROOT: /mail
+      MP_UI_AUTH: "admin:${MAILPIT_PASSWORD:?Set MAILPIT_PASSWORD in .env}"
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_SMTP_DISABLE_RDNS: "true"
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+      MP_MAX_MESSAGES: "5000"
+    volumes: ["mail_data:/data"]
+    networks: [edge_net, data_net]
+    restart: unless-stopped
+
+  # Production SSR serves port 3000 internally and uses the same-origin /api/v1 build setting.
+  frontend:
+    logging: *local-logs
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+    environment:
+      PORT: "3000"
+      TRUSTED_PROXY_IP: ${TRAEFIK_IPV4:-172.30.80.2}
+    networks: [edge_net]
+    depends_on:
+      backend: {condition: service_healthy}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# Networks separate ingress-facing and data paths, but are not configured as an outbound firewall.
+networks:
+  edge_net:
+    name: supportdeflect_edge_net
+    ipam:
+      config: [{subnet: "${EDGE_SUBNET:-172.30.80.0/24}"}]
+  data_net:
+    name: supportdeflect_data_net
+
+# Back up PostgreSQL, widget assets and mailbox together; hf_cache can be recreated by downloading the model.
+volumes:
+  postgres_data:
+  widget_assets:
+  mail_data:
+  hf_cache:

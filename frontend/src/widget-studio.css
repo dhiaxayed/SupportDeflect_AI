@@ -1,0 +1,305 @@
+/**
+ * Widget Design Studio controls and preview-stage layout, imported by its tenant route.
+ * Use shared application tokens for tabs, numeric/color fields, logo selection and install
+ * snippets; constrain the iframe stage for desktop/mobile inspection. The iframe loads the
+ * backend's shadow-DOM widget CSS, so these styles never become a second widget renderer.
+ */
+.widget-studio {
+  color: var(--foreground);
+  background: var(--background);
+  min-width: 0;
+}
+.studio-actions,
+.studio-install-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.studio-actions > span {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.studio-layout {
+  display: grid;
+  grid-template-columns: minmax(310px, 0.9fr) minmax(0, 1.1fr);
+  gap: 24px;
+  padding: 24px;
+  align-items: start;
+  min-width: 0;
+}
+.studio-controls,
+.studio-preview {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+.studio-controls {
+  overflow: hidden;
+}
+.studio-controls nav {
+  display: flex;
+  margin: 20px;
+  padding: 4px;
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--muted);
+}
+.studio-controls nav button {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 6px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.studio-controls nav button[aria-selected="true"] {
+  color: var(--foreground);
+  background: var(--background);
+  box-shadow: 0 1px 3px #15244915;
+}
+.studio-fields section {
+  padding: 22px 24px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 18px;
+}
+.studio-fields h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.studio-fields label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+.studio-fields input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
+.studio-fields select,
+.studio-fields textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 4px);
+  box-shadow: 0 1px 2px #13224408;
+}
+.studio-fields textarea {
+  resize: vertical;
+}
+.studio-fields input:focus-visible,
+.studio-fields select:focus-visible,
+.studio-fields textarea:focus-visible,
+.studio-controls button:focus-visible,
+.studio-preview button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.studio-fields .studio-color {
+  display: grid;
+  grid-template-columns: 1fr 38px 68px;
+  align-items: center;
+  gap: 10px;
+}
+.studio-color input {
+  width: 38px;
+  height: 34px;
+  padding: 3px;
+  border: 1px solid var(--input);
+  border-radius: 6px;
+  background: var(--background);
+  cursor: pointer;
+}
+.studio-color span {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+.studio-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.studio-number {
+  position: relative;
+}
+.studio-number input {
+  padding-right: 32px !important;
+}
+.studio-number span {
+  position: absolute;
+  right: 11px;
+  top: 11px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.studio-fields .studio-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.5;
+}
+.studio-check input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+}
+.studio-upload {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 68px;
+  padding: 14px;
+  border: 1px dashed var(--input);
+  border-radius: var(--radius);
+  background: var(--muted);
+  cursor: pointer;
+}
+.studio-upload:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.studio-upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.studio-logo {
+  width: 96px;
+  height: 64px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  padding: 6px;
+}
+.studio-snippet {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.studio-install-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 4px);
+  font-size: 13px;
+  background: var(--background);
+  cursor: pointer;
+}
+.studio-install-actions button:hover {
+  background: var(--accent);
+}
+.studio-preview {
+  position: sticky;
+  top: 152px;
+  overflow: hidden;
+}
+.studio-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+}
+.studio-preview-toolbar > div {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--muted);
+}
+.studio-preview-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.studio-preview-toolbar button[aria-pressed="true"] {
+  color: var(--primary);
+  background: var(--background);
+  box-shadow: 0 1px 3px #15244915;
+}
+.studio-preview-toolbar button:hover {
+  color: var(--primary);
+}
+.studio-preview-stage {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: var(--gradient-subtle);
+}
+.studio-preview iframe {
+  display: block;
+  max-width: 100%;
+  height: 700px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8faff;
+}
+@media (max-width: 1100px) {
+  .studio-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-preview {
+    position: static;
+  }
+}
+@media (max-width: 640px) {
+  .studio-layout {
+    padding: 16px;
+    gap: 20px;
+  }
+  .studio-fields section {
+    padding: 20px 16px;
+  }
+  .studio-controls nav {
+    margin: 16px;
+  }
+  .studio-preview-stage {
+    padding: 8px;
+  }
+  .studio-preview-toolbar {
+    padding-inline: 14px;
+  }
+  .studio-preview iframe {
+    height: 700px;
+  }
+}

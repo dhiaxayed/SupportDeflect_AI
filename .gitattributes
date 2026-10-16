@@ -1,0 +1,8 @@
+# Repository text normalization; line endings are chosen for each file's execution environment.
+# These attributes affect Git checkout/normalization, not runtime application settings.
+# Auto-detect text while leaving binary assets unconverted.
+* text=auto
+# Linux shell/Docker instructions require LF; Windows double-click launchers retain CRLF.
+*.sh text eol=lf
+*.bat text eol=crlf
+Dockerfile text eol=lf

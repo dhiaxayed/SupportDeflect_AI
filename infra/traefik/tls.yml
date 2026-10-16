@@ -1,0 +1,35 @@
+# Dynamic HTTPS routing/certificate configuration mounted only by the optional Compose TLS overlay.
+# Install server.crt/server.key first and trust the certificate on clients; this file requests no public CA service.
+http:
+  # Mirror HTTP route priorities/upstreams on websecure while reusing the base buffering/security middleware.
+  routers:
+    api-tls:
+      rule: PathPrefix(`/api/`)
+      entryPoints: [websecure]
+      priority: 100
+      service: api
+      middlewares: [api-limits, security]
+      tls: {}
+    frontend-tls:
+      rule: PathPrefix(`/`)
+      entryPoints: [websecure]
+      priority: 1
+      service: frontend
+      middlewares: [security]
+      tls: {}
+    mail-tls:
+      rule: PathPrefix(`/mail`)
+      entryPoints: [websecure]
+      priority: 110
+      service: mail
+      middlewares: [security]
+      tls: {}
+# Certificate paths are inside the read-only container mount; private keys remain ignored host deployment data.
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/server.crt
+      keyFile: /etc/traefik/certs/server.key
+  options:
+    default:
+      # Negotiate TLS 1.2 or newer; this minimum does not replace certificate hostname/trust validation.
+      minVersion: VersionTLS12

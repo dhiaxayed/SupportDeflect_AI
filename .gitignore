@@ -1,10 +1,16 @@
+# Local secrets, persisted state, generated dependencies/builds and evidence stay out of version control.
+# Ignore rules do not remove already tracked files or provide runtime filesystem access control.
 # Environment secrets
 .env
 **/.env
 **/.env.local
 **/.env.*.local
+# Ignore private variants such as .env.production and .env.backup at every depth.
+.env.*
+**/.env.*
+# Public templates are the only environment variants intended for version control.
 !.env.example
-!.env.production.example
+!.env.*.example
 
 # Python
 __pycache__/
@@ -24,14 +30,27 @@ dist-ssr/
 .vinxi/
 .tanstack/
 .nitro/
+test-results/
+playwright-report/
 
 # Local data
+# Includes local knowledge/logo/mail state and private certificates, which require protected backups instead.
+data/
+infra/certs/
+*.db-shm
+*.db-wal
 uploads/
 .chroma/
 **/.chroma/
 
 # Logs
+# Database dumps and logs may contain customer data or operational credentials; do not publish them.
+backups/
+*.dump
+.coverage
+htmlcov/
 logs/
+supportdeflect-worker-heartbeat
 *.log
 npm-debug.log*
 yarn-debug.log*

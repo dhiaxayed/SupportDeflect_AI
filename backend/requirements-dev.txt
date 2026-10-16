@@ -1,0 +1,12 @@
+# Developer/CI dependencies layered over the exact production requirements; not installed by the runtime image.
+# Includes test execution/coverage, lint and YAML parsing for configuration contract checks.
+# Resolve this relative include from the requirements file's own directory.
+-r requirements.txt
+
+# Async tests use pytest-asyncio; coverage measures executed application code rather than deployment proof.
+pytest==9.1.1
+pytest-asyncio==1.4.0
+pytest-cov==6.0.0
+# Lint policy lives in pyproject.toml; PyYAML reads Compose/workflow fixtures without running containers.
+ruff==0.8.4
+PyYAML==6.0.3

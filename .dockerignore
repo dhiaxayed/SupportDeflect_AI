@@ -1,0 +1,20 @@
+# Root Docker build-context exclusions, used by the mailer image built from this checkout.
+# Exclusion affects context transfer/image inputs; it does not delete local files or replace Git ignore rules.
+# Omit repository metadata and the host Python environment from container build contexts.
+.git
+.venv
+# Dependencies are installed from lockfiles inside images rather than copied from the host.
+**/node_modules
+# Never send real environment files, including local overrides, to the image builder.
+**/.env
+**/.env.*
+# Keep persisted customer data, backups and runtime evidence outside distributable images.
+**/*.db
+**/*.sqlite
+**/data
+**/backups
+**/logs
+**/test-results
+**/dist
+# TLS private material is mounted separately at runtime, never packaged in an application image.
+infra/certs

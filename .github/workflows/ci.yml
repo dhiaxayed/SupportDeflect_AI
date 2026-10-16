@@ -1,0 +1,184 @@
+# Build/test workflow for pushes and pull requests; no job deploys to a target VM or production account.
+# Runner fixtures/volumes are disposable; artifact uploads intentionally exclude private credentials/backups.
+name: Build and Test
+on:
+  push:
+  pull_request:
+# Read-only repository token is sufficient for checkout and test execution.
+permissions:
+  contents: read
+
+jobs:
+  # Python 3.11 matches the runtime image; unit/API fixtures isolate user databases and AI provider doubles.
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.14.0+cpu
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff check ../scripts --config pyproject.toml
+      - run: python -m pytest --cov=app --cov-report=term-missing
+      - run: python -m unittest discover -s ../scripts/tests -v
+
+  # Real pgvector service on the ephemeral runner; *_test database guard prevents selecting a normal database.
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg17-bookworm
+        env:
+          POSTGRES_DB: supportdeflect_test
+          POSTGRES_USER: supportdeflect
+          POSTGRES_PASSWORD: ephemeral-ci-only
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U supportdeflect -d supportdeflect_test"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      TEST_POSTGRES_URL: postgresql+psycopg://supportdeflect:ephemeral-ci-only@localhost:5432/supportdeflect_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.14.0+cpu
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest integration -q
+
+  # Node 24 lockfile install, lint/types/unit checks and both SSR/client build plus production HTTP smoke.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Presence/grammar gate: named source contracts plus the maintained per-file French guide.
+      - run: python3 ../scripts/check_documentation.py
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run build
+      - run: node scripts/check-production.mjs
+
+  # Full Compose ingress/SMTP/persistence and fresh-volume restore rehearsal; 40-minute job budget includes builds.
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # Real containers and SMTP, but no paid/provider call in this infrastructure job.
+      GROQ_API_KEY: ci-infrastructure-only-no-llm-call
+      # Fresh hf_cache volumes need the initial local-model download, including after restore setup.
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --env-file .env.example config --quiet
+      - run: docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.tls.yml config --quiet
+      - run: python3 scripts/configure.py --url http://localhost
+      - run: docker compose up -d --build
+      - name: Real ingress, services, SMTP and down/up persistence
+        run: python3 scripts/verify_stack.py --exercise --state logs/stack-state.json --restart --allow-interruption --report logs/stack-before-restore.json
+      - name: Back up and restore on fresh disposable CI volumes
+        run: |
+          bash scripts/backup_stack.sh
+          # Only this ephemeral GitHub runner is destroyed, never a target VM.
+          docker compose down --volumes
+          docker compose up -d
+          python3 scripts/verify_stack.py --report logs/stack-fresh.json
+          docker compose exec -T backend python -c "from app.db import engine; from sqlalchemy import text; c=engine.connect(); assert c.scalar(text('SELECT count(*) FROM organizations')) == 0"
+          backup=$(find backups -maxdepth 1 -type d -name 'stack-*' -print -quit)
+          bash scripts/restore_stack.sh "$backup" --confirm-replace
+          python3 scripts/verify_stack.py --state logs/stack-state.json --report logs/stack-after-restore.json
+          # Verify that restored non-root services can write new DB/assets/mail data.
+          python3 scripts/verify_stack.py --exercise --state logs/after-restore-state.json --report logs/stack-writable.json
+      # Upload only enumerated sanitized reports, never stack-state credential JSON or backups.
+      - name: Sanitized infrastructure evidence only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compose-acceptance
+          path: |
+            logs/stack-before-restore.json
+            logs/stack-fresh.json
+            logs/stack-after-restore.json
+            logs/stack-writable.json
+          if-no-files-found: warn
+      # Destructive volume cleanup is confined to this disposable hosted runner, even when earlier steps fail.
+      - name: Dispose CI containers
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  # Exercise MIME/SMTP policy and privileged HTTP transport behavior with pinned Node dependencies.
+  mailer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: mailer/package-lock.json
+      - run: npm ci
+        working-directory: mailer
+      - run: npm test
+        working-directory: mailer
+
+  # Isolated API/UI/browser fixtures use a pinned local SMTP capture binary; no customer inbox delivery.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.14.0+cpu
+      - run: pip install -r backend/requirements-dev.txt
+      - run: npm ci --prefix frontend
+      - run: npm ci --prefix mailer
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Install pinned local SMTP capture
+        run: |
+          curl --fail --location --retry 3 https://github.com/axllent/mailpit/releases/download/v1.31.3/mailpit-linux-amd64.tar.gz -o /tmp/mailpit.tar.gz
+          tar -xzf /tmp/mailpit.tar.gz -C /tmp mailpit
+      - run: npx playwright test
+        working-directory: frontend
+        env:
+          MAILPIT_BINARY: /tmp/mailpit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: frontend/test-results

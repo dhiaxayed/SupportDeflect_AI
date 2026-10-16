@@ -1,0 +1,13 @@
+# Frontend Docker build context: omit local environment values, dependencies, build output
+# and developer caches so the Dockerfile installs the lockfile and produces fresh assets.
+.env
+.env.*
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack
+.nitro
+.wrangler
+*.log

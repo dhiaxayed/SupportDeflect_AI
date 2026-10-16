@@ -1,0 +1,9 @@
+{
+  "name": "supportdeflect-mailer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node --env-file-if-exists=.env worker.mjs", "test": "node --test" },
+  "engines": { "node": ">=22.9" },
+  "dependencies": { "nodemailer": "10.0.10" }
+}

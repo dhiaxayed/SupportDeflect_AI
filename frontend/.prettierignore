@@ -1,0 +1,10 @@
+# Format maintained source/configuration, leaving generated output, dependencies, route
+# registration and lockfiles to their owning generators/package managers.
+node_modules
+dist
+.output
+.vinxi
+pnpm-lock.yaml
+package-lock.json
+bun.lock
+routeTree.gen.ts

@@ -1,0 +1,20 @@
+# Backend test/lint settings shared by local development and CI; this file does not install dependencies.
+# Run backend checks from backend/; root operator scripts explicitly select this configuration.
+# Default collection covers isolated unit/API tests; PostgreSQL integration is an explicit separate command.
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# Each async fixture uses a function-scoped loop, preventing cross-test event-loop state sharing.
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+# Python 3.11 is the container/CI syntax target; line-length is characters, not a formatter execution setting.
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Check pycodestyle errors, undefined/unused names, import order, modernization and bug-prone patterns.
+select = ["E", "F", "I", "UP", "B"]
+# FastAPI intentionally declares Depends/Query/File call objects in function defaults.
+ignore = ["B008"]

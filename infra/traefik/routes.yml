@@ -1,0 +1,46 @@
+# HTTP ingress routes for the default isolated-lab stack; optional HTTPS routers live in tls.yml.
+# Only internal Compose DNS names are upstreams; tenant/auth/visitor authorization stays in the application.
+# Static service discovery avoids giving the reverse proxy access to Docker's socket.
+http:
+  # Explicit priorities keep API and mailbox prefixes ahead of the catch-all frontend route.
+  routers:
+    api:
+      rule: PathPrefix(`/api/`)
+      entryPoints: [web]
+      priority: 100
+      service: api
+      middlewares: [api-limits, security]
+    frontend:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      priority: 1
+      service: frontend
+      middlewares: [security]
+    mail:
+      rule: PathPrefix(`/mail`)
+      entryPoints: [web]
+      priority: 110
+      service: mail
+      middlewares: [security]
+  # Forward the original paths; Mailpit itself is configured with /mail as its web root.
+  services:
+    api:
+      loadBalancer:
+        servers: [{url: "http://backend:8000"}]
+    frontend:
+      loadBalancer:
+        servers: [{url: "http://frontend:3000"}]
+    mail:
+      loadBalancer:
+        servers: [{url: "http://mailpit:8025"}]
+  middlewares:
+    # Whole request body cap is 101 MiB (multipart overhead included), with a 2 MiB memory threshold.
+    api-limits:
+      buffering:
+        maxRequestBodyBytes: 105906176
+        memRequestBodyBytes: 2097152
+    # Browser response hardening is shared; these headers do not authenticate users or enable TLS by themselves.
+    security:
+      headers:
+        contentTypeNosniff: true
+        referrerPolicy: strict-origin-when-cross-origin

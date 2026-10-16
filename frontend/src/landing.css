@@ -1,0 +1,55 @@
+/**
+ * Public landing-page layout refinements, imported by the landing route beside shared theme
+ * styles. Bound the static example widget and adjust navigation/type spacing for narrow
+ * screens without changing the standalone customer widget or authenticated workspace layouts.
+ */
+.marketing-widget-preview {
+  height: 390px;
+}
+.marketing-widget-panel {
+  width: min(320px, calc(100% - 32px));
+}
+.marketing-widget-launcher {
+  right: 360px;
+}
+.public-site section[id] {
+  scroll-margin-top: 84px;
+}
+.public-site h1 {
+  overflow-wrap: normal;
+}
+@media (max-width: 640px) {
+  .public-site > header > div {
+    padding-inline: 16px;
+    gap: 8px;
+  }
+  .public-site > header img {
+    width: 130px;
+    height: auto;
+  }
+  .public-site > header > div > div a {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+  .public-site h1 {
+    font-size: 36px;
+    line-height: 1.14;
+  }
+  .marketing-widget-preview {
+    height: 440px;
+  }
+  .marketing-widget-panel {
+    bottom: 72px;
+  }
+  .marketing-widget-launcher {
+    right: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .public-site > header img {
+    width: 110px;
+  }
+  .public-site h1 {
+    font-size: 30px;
+  }
+}
