@@ -73,6 +73,10 @@ fonctionnels de configuration ont ensuite été ajoutés explicitement :
    contrôleur documentaire après installation des dépendances frontend.
 
 Ces changements de politique ne sont pas présentés comme de simples commentaires.
+Le suivi du pipeline a ensuite enrichi les diagnostics de l’outil opérateur et du
+job conteneurs après deux échecs au redémarrage : seuls des libellés/états autorisés
+sont exposés. Ce changement de comportement du diagnostic et son test de
+confidentialité sont distincts de l’équivalence du code pendant la passe de commentaires.
 Les comparaisons finales distinguent bien ces deux fichiers du reste de la passe.
 Les commentaires HTML et le modèle Alembic ont été relus ; les pages frontend
 sont aussi exercées par build et navigateur, sans prétendre à une comparaison

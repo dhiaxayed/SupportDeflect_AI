@@ -58,6 +58,15 @@ successfully. Sanitized acceptance reports were uploaded as the compose-acceptan
 This proves an ephemeral hosted Linux/Docker run, not student provisioning/reboot of the
 target VM. The branch Actions page records subsequent documentation-commit runs independently.
 
+The subsequent documentation commit `67dd2c5` passed five application/database jobs, but
+its containers job failed twice in the down/up phase after successful registration, logo
+and SMTP checks. The original sanitized message omitted the Docker operation. Follow-up
+diagnostics now retain only fixed operation/reason labels and allowlisted container states,
+error classes and categories; raw inspect/log output remains private. The operator suite
+still passes all 12 tests, including secret-bearing output/argument redaction. The live
+Actions result remains authoritative for this follow-up; the earlier green run is not
+substituted for a failed later revision.
+
 ## Resumed final review: 2026-10-15
 
 The resumed review checked the current source and corrected stale quota-risk wording in

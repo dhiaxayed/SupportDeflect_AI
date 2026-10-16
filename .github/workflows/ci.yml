@@ -114,6 +114,33 @@ jobs:
           python3 scripts/verify_stack.py --state logs/stack-state.json --report logs/stack-after-restore.json
           # Verify that restored non-root services can write new DB/assets/mail data.
           python3 scripts/verify_stack.py --exercise --state logs/after-restore-state.json --report logs/stack-writable.json
+      # Failure diagnostics emit only fixed service names, states, error classes and
+      # recognized categories. Full inspect/log output stays private in process memory.
+      - name: Sanitized container failure diagnosis
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import json
+          import subprocess
+
+          names = {"traefik", "postgres", "migrate", "backend", "worker", "frontend", "mailer", "mailpit"}
+          classes = {"OSError", "PermissionError", "RuntimeError", "OperationalError", "ImportError", "ModuleNotFoundError", "ValueError", "ReadTimeout", "ConnectTimeout", "HTTPError", "HfHubHTTPError", "LocalEntryNotFoundError", "OfflineModeIsEnabled"}
+          reasons = {"permission denied": "permission", "connection refused": "connection_refused", "network is unreachable": "network", "no space left on device": "storage", "out of memory": "memory", "could not load": "model_load", "can't load": "model_load", "offline": "offline", "deadlock": "database_deadlock"}
+          # Inspect only current project IDs, then emit a strict field allowlist.
+          ids = subprocess.run(["docker", "compose", "ps", "--all", "--quiet"], capture_output=True, text=True, timeout=30).stdout.split()
+          if ids:
+              inspection = subprocess.run(["docker", "inspect", *ids], capture_output=True, text=True, timeout=30)
+              for item in json.loads(inspection.stdout or "[]"):
+                  service = item.get("Config", {}).get("Labels", {}).get("com.docker.compose.service")
+                  if service not in names:
+                      continue
+                  state = item.get("State", {})
+                  health = state.get("Health", {})
+                  logs = subprocess.run(["docker", "logs", "--tail", "80", item["Id"]], capture_output=True, text=True, timeout=30)
+                  private_text = logs.stdout + logs.stderr + " ".join(row.get("Output", "") for row in health.get("Log", []))
+                  # No raw log lines, environment fields, URLs, exception values or credentials.
+                  print(json.dumps({"service": service, "state": state.get("Status"), "exit_code": state.get("ExitCode"), "oom_killed": state.get("OOMKilled"), "health": health.get("Status"), "health_exit_codes": [row.get("ExitCode") for row in health.get("Log", [])[-3:]], "error_classes": sorted(name for name in classes if name in private_text), "categories": sorted({label for marker, label in reasons.items() if marker in private_text.lower()})}))
+          PY
       # Upload only enumerated sanitized reports, never stack-state credential JSON or backups.
       - name: Sanitized infrastructure evidence only
         uses: actions/upload-artifact@v4

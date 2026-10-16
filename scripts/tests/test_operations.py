@@ -283,12 +283,20 @@ class StackTests(unittest.TestCase):
             compose.assert_not_called()
 
     def test_command_failure_does_not_disclose_environment(self):
-        """Inject secret-bearing command output and require the reported failure to omit those private values."""
+        """Inject secret-bearing command output and require only fixed operation/reason labels in failures."""
         result = subprocess.CompletedProcess(["docker"], 1, "SECRET_KEY=private", "password=private")
         with patch.object(verify.subprocess, "run", return_value=result):
             with self.assertRaises(verify.CheckError) as error:
                 verify.compose("config")
             self.assertNotIn("private", str(error.exception))
+            self.assertIn("docker compose config", str(error.exception))
+        result = subprocess.CompletedProcess(
+            ["docker"], 1, "SECRET_KEY=private", 'container backend is unhealthy; password=private'
+        )
+        with patch.object(verify.subprocess, "run", return_value=result):
+            with self.assertRaises(verify.CheckError) as error:
+                verify.compose("up", "-d", "private-argument")
+            self.assertEqual(str(error.exception), "docker compose up command failed; a dependency is unhealthy")
 
     def test_timeout_retains_safe_actionable_failure(self):
         """Keep the sanitized unhealthy-service reason when readiness polling reaches its deadline."""

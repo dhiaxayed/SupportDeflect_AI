@@ -42,14 +42,34 @@ def require(condition, message):
 
 def command(*args):
     """Run an operator command from the repository with a timeout; return stdout privately and expose only sanitized
-    command-failure diagnostics.
+    command-failure diagnostics. Known Docker operations/reasons are reported through
+    fixed labels; arbitrary arguments, stdout and stderr never enter an exception.
     """
     try:
         result = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=240)
     except (OSError, subprocess.TimeoutExpired):
         raise CheckError(f"Cannot execute {args[0]}; verify installation, daemon and permissions") from None
-    # Compose config and container inspection can contain secrets. Never print them.
-    require(result.returncode == 0, f"{args[0]} command failed; inspect the service locally")
+    # Compose config/inspect and arbitrary child output can contain secrets. Only
+    # fixed command labels and recognized failure categories may enter a public report.
+    label = args[0]
+    if args[:2] == ("docker", "compose") and len(args) > 2 and args[2] in {
+        "config", "version", "ps", "exec", "down", "up",
+    }:
+        label = f"docker compose {args[2]}"
+    reason = "inspect the service locally"
+    for marker, safe_reason in (
+        ("is unhealthy", "a dependency is unhealthy"),
+        ("didn't complete successfully", "a one-shot dependency failed"),
+        ("has active endpoints", "a network still has active endpoints"),
+        ("no space left on device", "Docker storage is exhausted"),
+        ("cannot connect to the docker daemon", "Docker daemon is unavailable"),
+        ("address already in use", "a required port is occupied"),
+        ("toomanyrequests", "container registry rate limit"),
+    ):
+        if marker in (result.stderr or "").lower():
+            reason = safe_reason
+            break
+    require(result.returncode == 0, f"{label} command failed; {reason}")
     return result.stdout
 
 
