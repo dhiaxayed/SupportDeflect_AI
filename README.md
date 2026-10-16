@@ -1,6 +1,6 @@
 # SupportDeflect AI
 
-[![Build and Test](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=feature%2Fsupportdeflect-v2)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Afeature%2Fsupportdeflect-v2)
+[![Build and Test](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Amain)
 
 Self-hosted, multi-tenant customer support: local knowledge retrieval, Groq-generated answers,
 a configurable embeddable widget, human follow-up and an operational administration console.
@@ -159,7 +159,8 @@ certificates or captured email. GitHub Actions runs backend, PostgreSQL, fronten
 browser/SMTP and image-build jobs on every push and pull request.
 Deployment is a deliberate operator action in the runbook. No push, merge or remote CI execution
 is implied by a local audit alone. The reviewed root layout was published on
-`feature/supportdeflect-v2` on 16 October 2026; the badge links to actual hosted results.
+`feature/supportdeflect-v2` on 16 October 2026, then integrated into `main` after the
+six-job pipeline passed on `dc600a1`. The badge follows the principal branch's actual results.
 Target-VM acceptance remains separate in the professor checklist.
 
 The documentation presence gate runs from the repository root after frontend dependencies

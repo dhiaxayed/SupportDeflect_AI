@@ -67,6 +67,14 @@ still passes all 12 tests, including secret-bearing output/argument redaction. T
 Actions result remains authoritative for this follow-up; the earlier green run is not
 substituted for a failed later revision.
 
+The instrumented revision `dc600a1` subsequently passed **all six groups** in
+[run 38850991816](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38850991816),
+including the unchanged down/up, full-restore and post-restore-write assertions. The earlier
+Docker stderr was not retained, so its exact cause is not asserted. The new diagnostic
+retains actionable safe context for future failures. The validated revision was then
+integrated into `main` at the user's request; presentation badges and clone instructions
+follow the principal branch. Its post-integration run is visible in the main Actions page.
+
 ## Resumed final review: 2026-10-15
 
 The resumed review checked the current source and corrected stale quota-risk wording in

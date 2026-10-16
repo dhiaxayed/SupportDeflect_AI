@@ -124,10 +124,36 @@ jobs:
           import subprocess
 
           names = {"traefik", "postgres", "migrate", "backend", "worker", "frontend", "mailer", "mailpit"}
-          classes = {"OSError", "PermissionError", "RuntimeError", "OperationalError", "ImportError", "ModuleNotFoundError", "ValueError", "ReadTimeout", "ConnectTimeout", "HTTPError", "HfHubHTTPError", "LocalEntryNotFoundError", "OfflineModeIsEnabled"}
-          reasons = {"permission denied": "permission", "connection refused": "connection_refused", "network is unreachable": "network", "no space left on device": "storage", "out of memory": "memory", "could not load": "model_load", "can't load": "model_load", "offline": "offline", "deadlock": "database_deadlock"}
+          classes = {
+              "OSError",
+              "PermissionError",
+              "RuntimeError",
+              "OperationalError",
+              "ImportError",
+              "ModuleNotFoundError",
+              "ValueError",
+              "ReadTimeout",
+              "ConnectTimeout",
+              "HTTPError",
+              "HfHubHTTPError",
+              "LocalEntryNotFoundError",
+              "OfflineModeIsEnabled",
+          }
+          reasons = {
+              "permission denied": "permission",
+              "connection refused": "connection_refused",
+              "network is unreachable": "network",
+              "no space left on device": "storage",
+              "out of memory": "memory",
+              "could not load": "model_load",
+              "can't load": "model_load",
+              "offline": "offline",
+              "deadlock": "database_deadlock",
+          }
           # Inspect only current project IDs, then emit a strict field allowlist.
-          ids = subprocess.run(["docker", "compose", "ps", "--all", "--quiet"], capture_output=True, text=True, timeout=30).stdout.split()
+          ids = subprocess.run(
+              ["docker", "compose", "ps", "--all", "--quiet"], capture_output=True, text=True, timeout=30
+          ).stdout.split()
           if ids:
               inspection = subprocess.run(["docker", "inspect", *ids], capture_output=True, text=True, timeout=30)
               for item in json.loads(inspection.stdout or "[]"):
@@ -136,10 +162,27 @@ jobs:
                       continue
                   state = item.get("State", {})
                   health = state.get("Health", {})
-                  logs = subprocess.run(["docker", "logs", "--tail", "80", item["Id"]], capture_output=True, text=True, timeout=30)
+                  logs = subprocess.run(
+                      ["docker", "logs", "--tail", "80", item["Id"]], capture_output=True, text=True, timeout=30
+                  )
                   private_text = logs.stdout + logs.stderr + " ".join(row.get("Output", "") for row in health.get("Log", []))
                   # No raw log lines, environment fields, URLs, exception values or credentials.
-                  print(json.dumps({"service": service, "state": state.get("Status"), "exit_code": state.get("ExitCode"), "oom_killed": state.get("OOMKilled"), "health": health.get("Status"), "health_exit_codes": [row.get("ExitCode") for row in health.get("Log", [])[-3:]], "error_classes": sorted(name for name in classes if name in private_text), "categories": sorted({label for marker, label in reasons.items() if marker in private_text.lower()})}))
+                  print(
+                      json.dumps(
+                          {
+                              "service": service,
+                              "state": state.get("Status"),
+                              "exit_code": state.get("ExitCode"),
+                              "oom_killed": state.get("OOMKilled"),
+                              "health": health.get("Status"),
+                              "health_exit_codes": [row.get("ExitCode") for row in health.get("Log", [])[-3:]],
+                              "error_classes": sorted(name for name in classes if name in private_text),
+                              "categories": sorted(
+                                  {label for marker, label in reasons.items() if marker in private_text.lower()}
+                              ),
+                          }
+                      )
+                  )
           PY
       # Upload only enumerated sanitized reports, never stack-state credential JSON or backups.
       - name: Sanitized infrastructure evidence only

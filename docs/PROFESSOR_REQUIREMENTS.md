@@ -22,7 +22,8 @@ All other core services remain local. Provisioning decision: manual Ubuntu Serve
 | 2 - Infrastructure | Real Compose ingress/persistence/restore passed in hosted CI; target-VM phase not accepted yet | Provision and exercise the target VM, including reboot and operator installation |
 | 3 - Operations | Reviewed branch published; first complete hosted pipeline passed | Keep the latest revision green and complete clean-room target-VM installation/manual release |
 
-Published branch: `feature/supportdeflect-v2`, initial reviewed commit `40b8b03`.
+Principal branch: `main`, integrated after the complete successful run on `dc600a1`.
+Initial feature-branch publication was `40b8b03` on `feature/supportdeflect-v2`.
 The [hosted run](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38849007018)
 has passed backend (165 tests, 91% statement coverage), real PostgreSQL/pgvector,
 frontend, mailer, twelve browser checks and the complete containers job: **six jobs successful**.
@@ -86,7 +87,7 @@ on disposable volumes. This hosted scenario is implemented, not yet observed exe
 
 | Professor requirement | Implementation | Files | Test / proof |
 |---|---|---|---|
-| Git repository and real branching model | Feature branch -> review -> CI -> merge; existing root reorganization preserved | .git; README.md | Reviewed feature branch committed/pushed on 16 October; no merge into main performed |
+| Git repository and real branching model | Feature branch -> review -> CI -> main; existing root reorganization preserved | .git; README.md | Feature revision integrated into main after six successful CI groups; no history rewrite |
 | Environment outside code | Central settings validation; env examples; generator; ignored private files | backend/app/core/config.py; .env.example; .gitignore; scripts/configure.py | Invalid production/test-provider configurations rejected by tests |
 | No committed secrets | Secret placeholders only in examples; test-only credentials scoped to disposable data | .gitignore; CI/E2E fixtures | Working-tree review; historical Git-secret attestation is not implied |
 | Build/test every push | Backend, operator scripts, PostgreSQL, frontend, mailer, browser/SMTP; image startup, persistence and fresh-volume restore | .github/workflows/ci.yml | Push triggered the linked hosted run; actual per-job results are visible in Actions |

@@ -11,12 +11,15 @@
 fonctionnement réel et les preuves correspondant à la phase 1 du cahier des charges.
 **Revue : 16 octobre 2026.**
 
-[![Build et tests](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=feature%2Fsupportdeflect-v2)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Afeature%2Fsupportdeflect-v2)
+[![Build et tests](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Amain)
 
-Le badge et le lien montrent l’état réel du pipeline de la branche publiée.
+Le badge et le lien montrent l’état réel du pipeline de la branche principale `main`.
 Premier push vérifié le 16 octobre : commit `40b8b03` sur `feature/supportdeflect-v2`.
 Les six jobs de son [pipeline complet](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38849007018)
 ont réussi, avec PostgreSQL réel, navigateur et restauration Docker inclus.
+La révision de diagnostic `dc600a1` a ensuite validé à nouveau les six groupes dans
+[ce passage complet](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38850991816).
+Elle a été intégrée dans `main`, avec les liens de présentation et d’installation adaptés.
 
 **Document de référence :** `Local-Infrastructure-Project-Roadmap-EN-FR (1).docx`,
 sections française et anglaise, « Phase 1 — Application · Semaines 1–4 ».
@@ -548,7 +551,7 @@ les lancements suivants peuvent employer le cache local.
 Depuis PowerShell, à la racine d’un clone neuf :
 
 ```powershell
-git clone --branch feature/supportdeflect-v2 https://github.com/dhiaxayed/SupportDeflect_AI.git
+git clone --branch main https://github.com/dhiaxayed/SupportDeflect_AI.git
 cd SupportDeflect_AI
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.14.0+cpu
@@ -771,7 +774,7 @@ Pour le projet complet, les points de passage restent :
   réussi sur le runner GitHub ; la recette de votre VM reste distincte.
 - **PostgreSQL :** le test pgvector a réussi sur le runner Linux GitHub ; la
   recette du serveur cible et de ses données reste nécessaire pour le déploiement.
-- **Phase 3 :** la branche est publiée et son premier pipeline complet a réussi.
+- **Phase 3 :** la révision validée est intégrée dans `main` et les pipelines de préparation ont réussi.
   L’état des révisions suivantes se lit dans Actions ; l’installation propre et la release manuelle
   sur VM restent à éprouver. Un push ne garantit pas à lui seul un pipeline réussi.
 

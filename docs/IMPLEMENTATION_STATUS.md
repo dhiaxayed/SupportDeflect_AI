@@ -14,7 +14,7 @@ There are no normal-runtime fake providers or production dashboard fixtures.
 
 Complete professor acceptance still requires running the Docker stack on a Linux VM,
 checking target volume persistence/restoration and a clean-room manual installation.
-The reviewed feature branch is now published; the [hosted pipeline](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Afeature%2Fsupportdeflect-v2)
+The validated revision is integrated into `main`; the [hosted pipeline](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Amain)
 records current per-job results. All six jobs of the initial reviewed run passed,
 including real PostgreSQL integration and actual Docker ingress/persistence/full restore.
 A written Dockerfile or a passing Compose config check is not presented as that proof.
