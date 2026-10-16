@@ -1,5 +1,7 @@
 # SupportDeflect AI
 
+[![Build and Test](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=feature%2Fsupportdeflect-v2)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Afeature%2Fsupportdeflect-v2)
+
 Self-hosted, multi-tenant customer support: local knowledge retrieval, Groq-generated answers,
 a configurable embeddable widget, human follow-up and an operational administration console.
 There is no payment gateway, cloud database, cloud storage or external email service in the default stack.
@@ -156,7 +158,9 @@ a pull request. Merge only after build/test CI passes. Never commit .env, databa
 certificates or captured email. GitHub Actions runs backend, PostgreSQL, frontend, mailer,
 browser/SMTP and image-build jobs on every push and pull request.
 Deployment is a deliberate operator action in the runbook. No push, merge or remote CI execution
-is implied by the local audit; the actual phase gates are recorded in the professor checklist.
+is implied by a local audit alone. The reviewed root layout was published on
+`feature/supportdeflect-v2` on 16 October 2026; the badge links to actual hosted results.
+Target-VM acceptance remains separate in the professor checklist.
 
 The documentation presence gate runs from the repository root after frontend dependencies
 are installed: `python scripts/check_documentation.py`. It checks Python docstrings, named

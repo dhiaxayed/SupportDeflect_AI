@@ -42,8 +42,21 @@ initially identical outside comments. The later phase-1 completion intentionally
 private environment ignore patterns and adds the documentation/Ruff CI gates. No actual
 backup/restore, target VM deployment or local Docker Engine execution was performed here.
 
-Git publication and hosted CI are separate observations recorded after the push; local
-successes do not imply that a remote job has run.
+Publication was verified on 16 October: local and remote SHA
+`40b8b0316bf8f1cc19ea53e43afa1348cabef9e5` match on `feature/supportdeflect-v2`.
+The [first hosted run](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38849007018)
+was triggered by that push. Its backend job passed **165 tests in 56.05 seconds** with
+**91% measured statement coverage** (3499 statements, 302 missed). Its separate real
+PostgreSQL/pgvector test passed in **1.44 seconds**, including migrations, vector(384)/HNSW,
+tenant-scoped cosine retrieval and distinct concurrent claims. This does not retroactively
+turn the local PostgreSQL skip into a local pass. Frontend, mailer and browser jobs also
+passed; the hosted browser run executed **12 passing journeys in 2.3 minutes**.
+The containers job also **passed**: actual image build/startup, sole proxy ingress,
+schema/authenticated routes, local SMTP, down/up comparisons, backup, restoration onto
+fresh volumes and successful subsequent writes. All **six jobs** of the first run completed
+successfully. Sanitized acceptance reports were uploaded as the compose-acceptance artifact.
+This proves an ephemeral hosted Linux/Docker run, not student provisioning/reboot of the
+target VM. The branch Actions page records subsequent documentation-commit runs independently.
 
 ## Resumed final review: 2026-10-15
 

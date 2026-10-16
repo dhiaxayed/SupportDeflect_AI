@@ -11,11 +11,22 @@
 fonctionnement réel et les preuves correspondant à la phase 1 du cahier des charges.
 **Revue : 16 octobre 2026.**
 
+[![Build et tests](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml/badge.svg?branch=feature%2Fsupportdeflect-v2)](https://github.com/dhiaxayed/SupportDeflect_AI/actions/workflows/ci.yml?query=branch%3Afeature%2Fsupportdeflect-v2)
+
+Le badge et le lien montrent l’état réel du pipeline de la branche publiée.
+Premier push vérifié le 16 octobre : commit `40b8b03` sur `feature/supportdeflect-v2`.
+Les six jobs de son [pipeline complet](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38849007018)
+ont réussi, avec PostgreSQL réel, navigateur et restauration Docker inclus.
+
 **Document de référence :** `Local-Infrastructure-Project-Roadmap-EN-FR (1).docx`,
 sections française et anglaise, « Phase 1 — Application · Semaines 1–4 ».
 Les deux versions formulent les mêmes six tâches et la même condition de clôture.
 Le document fourni reste la référence ; les exigences et décisions propres à
 SupportDeflect ci-dessous précisent leur mise en œuvre.
+
+L’analyse a couvert les 167 paragraphes du document, y compris ses tableaux et
+ses deux langues. Empreinte SHA-256 de la source examinée :
+`3f4a3b8e6a8e9990009e0b5c7e21bf350bee4d3a53caa3a8fc518e7fbfc706f6`.
 
 ## Sommaire
 
@@ -614,13 +625,13 @@ politique synthétique, réouvre la connexion et interroge le widget réel.
 |---|---|
 | Backend complet | 165 tests réussis après documentation ; 1 avertissement upstream Starlette, sans échec. |
 | Frontend composants/unitaires | 44 tests réussis dans 8 fichiers ; pool threads, un worker sur cet hôte Windows. |
-| Parcours navigateur | 12 parcours réussis dans une recette groupée de 2,6 minutes, dont SMTP Mailpit réel et site client indépendant. |
+| Parcours navigateur | 12 parcours réussis localement en 2,6 minutes et sur GitHub/Linux en 2,3 minutes, dont SMTP Mailpit réel et site client indépendant. |
 | Mailer | 8 tests MIME/transport/redirect réussis. |
 | Scripts opérateur | 12 tests de sécurité configuration/archive/probes réussis. |
 | Qualité statique/build | Ruff backend/scripts, ESLint, TypeScript, build client/SSR et smoke production contrôlés séparément. |
 | Documentation | 634 déclarations Python et 405 contrats JS/TS commentés ; guide couvrant les fichiers maintenus et contrôle automatique. |
 | MiniLM/Groq réels | Vecteurs 384, un passage persisté/relu et exclusion inter-locataire ; salutation et réponse widget sourcée HTTP 200 avec Groq réel. |
-| PostgreSQL/pgvector réel | Test disponible, mais ignoré localement faute de TEST_POSTGRES_URL ; aucun succès PostgreSQL inventé. |
+| PostgreSQL/pgvector réel | 1 skip local faute de serveur ; **1 test réussi sur PostgreSQL réel dans GitHub Actions**, migrations, HNSW, isolation et claims concurrents vérifiés. |
 
 Le registre [TESTING.md](docs/TESTING.md) donne les dates, commandes, résultats
 exacts et limites. Les anciens passages restent datés ; un ancien résultat n’est
@@ -756,10 +767,13 @@ Pour le projet complet, les points de passage restent :
   à faire approuver dans le périmètre pédagogique ou à remplacer/recetter localement.
 - **Phase 2 :** provisionner la VM Linux, exécuter les images, prouver entrée
   unique Traefik, persistance après redémarrage/reboot et restauration réelle.
-- **PostgreSQL :** observer le test pgvector et le comportement transactionnel
-  sur le serveur cible ; les tests SQLite ou le SQL compilé ne les remplacent pas.
-- **Phase 3 :** publier la révision, observer les jobs GitHub Actions et suivre
-  une installation propre/manuelle ; un push réussi ne garantit pas que le pipeline a réussi.
+  L’entrée unique, le redémarrage des conteneurs et la restauration ont déjà
+  réussi sur le runner GitHub ; la recette de votre VM reste distincte.
+- **PostgreSQL :** le test pgvector a réussi sur le runner Linux GitHub ; la
+  recette du serveur cible et de ses données reste nécessaire pour le déploiement.
+- **Phase 3 :** la branche est publiée et son premier pipeline complet a réussi.
+  L’état des révisions suivantes se lit dans Actions ; l’installation propre et la release manuelle
+  sur VM restent à éprouver. Un push ne garantit pas à lui seul un pipeline réussi.
 
 Le suivi de publication/CI se consulte dans le dépôt GitHub pour la branche et
 le commit publiés. Les autres procédures sont dans [RUNBOOK](docs/RUNBOOK.md),

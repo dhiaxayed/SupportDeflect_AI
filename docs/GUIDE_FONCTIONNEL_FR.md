@@ -201,5 +201,6 @@ et manuelle, avec sauvegarde avant migration. Les commandes se trouvent dans RUN
 Voir [TESTING.md](TESTING.md) pour les resultats executes, [AUDIT.md](AUDIT.md) pour les corrections
 et limites, et [PROFESSOR_REQUIREMENTS.md](PROFESSOR_REQUIREMENTS.md) pour chaque exigence du professeur.
 Les tests navigateur utilisent des donnees identifiees comme fixtures. Un autre test a reellement
-execute MiniLM et Groq. La VM/Docker et le pipeline distant doivent encore etre executes sur
-leurs environnements respectifs avant de signer la recette complete du professeur.
+execute MiniLM et Groq. La branche publiee declenche maintenant le pipeline GitHub ; ses
+resultats reels figurent dans TESTING et Actions. La recette de la VM cible reste distincte
+de l'execution Linux hebergee avant de signer la recette complete du professeur.

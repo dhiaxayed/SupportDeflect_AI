@@ -1,10 +1,12 @@
 # Final Repository Audit
 
-The latest full execution is the [13 October 2026 engineering review](QUALITY_REPORT_2026-10-13.md)
-and its [verification ledger](TESTING.md#full-project-review-2026-10-13). It adds concurrency,
+The latest application/documentation execution is the [16 October phase-1 review](../README_SUIVI_PHASE_1.md)
+and [verification ledger](TESTING.md). The [13 October engineering review](QUALITY_REPORT_2026-10-13.md) adds concurrency,
 session/logging privacy, restore/redirect and HTTP compatibility corrections, with 165 backend
 tests, 44 frontend unit tests and 12 browser scenarios passing. The dated history below remains
-useful prior evidence; the VM/PostgreSQL/Docker/hosted-CI acceptance gates remain open.
+useful prior evidence. Target-VM acceptance stays open; hosted PostgreSQL/backend/frontend/mailer
+and twelve browser journeys have now passed. The real containers job also passed startup,
+sole ingress, SMTP, down/up persistence, fresh-volume restoration and subsequent writes.
 
 ## Scope and Verdict
 
@@ -14,8 +16,9 @@ SMTP, Compose/proxy/storage, CI, operational scripts and repository documentatio
 
 The application has executable and executed local functional evidence, including a real Groq
 answer and real SMTP capture. The teacher's complete infrastructure/operations acceptance
-is **not yet certifiable**: there is no Docker Engine/Linux VM here and no hosted CI run
-has been triggered. Those are explicit external proof gates, not hidden mock substitutes.
+is **not yet certifiable**: the target Linux VM has not been exercised here. The reviewed
+branch has been pushed and all six jobs of its first hosted CI run passed on 16 October.
+A hosted Linux runner is separate from target-VM provisioning/reboot acceptance.
 
 ## Findings and Corrections
 
@@ -46,7 +49,7 @@ has been triggered. Those are explicit external proof gates, not hidden mock sub
 | Re-embedding utility imported removed schema helper | Uses canonical Alembic migrations and strict vector-length/count validation |
 | Proxy needed host Docker socket | Static Traefik file provider, no socket exposure |
 | Logos/mail missing from data-protection story | Named volumes, stack backup/validated restore scripts and orphan-logo maintenance |
-| CI built images without exercising the complete runtime | Containers job now starts Compose, checks proxy/API/auth/SMTP, compares data across down/up, restores onto fresh volumes and checks new writes; hosted execution still pending |
+| CI built images without exercising the complete runtime | Containers job starts Compose, checks proxy/API/auth/SMTP, compares data across down/up, restores onto fresh volumes and checks new writes; actual hosted execution is tracked in Actions |
 | Mail backup/restore assumed the default volume name | Resolve the actual mailbox volume through Compose, including the operator's project selection |
 | Restored assets/mail lost service ownership | Preserve archived UID/GID and ordinary mode bits; reject unsafe/conflicting/empty archives before deleting data; regression tests added |
 | TLS flags on startup did not propagate to backup/restore scripts | Runbook now exports COMPOSE_FILE for all operator commands and uses a trusted CA for verification |

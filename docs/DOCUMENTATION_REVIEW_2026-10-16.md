@@ -93,8 +93,14 @@ AST HTML globale inexistante.
 | Mailer | 8 tests réussis. |
 | Scripts opérateur | 12 tests réussis. |
 | MiniLM et widget/Groq réels | Vecteurs 384, passage persisté/relu, exclusion inter-locataire ; salutation puis réponse avec une source, HTTP 200. |
-| Intégration PostgreSQL locale | 1 skip explicite faute de `TEST_POSTGRES_URL`. |
+| Intégration PostgreSQL | 1 skip local faute de `TEST_POSTGRES_URL` ; après push, 1 test réel réussi sur le runner Linux GitHub. |
 | Compose baseline et TLS, syntaxe Bash | Configurations et cinq scripts valides ; aucun démarrage Docker/VM revendiqué. |
+
+Après publication du commit initial `40b8b03`, les six jobs du
+[premier pipeline hébergé](https://github.com/dhiaxayed/SupportDeflect_AI/actions/runs/38849007018)
+ont réussi. Le scénario conteneurs a réellement démarré les images puis vérifié
+proxy/SMTP, persistance, restauration et nouvelles écritures sur Linux. Cela
+complète les vérifications locales ci-dessus, sans prétendre à une VM cible provisionnée.
 
 Le premier passage Vitest en pool forks a échoué au démarrage d’un worker Windows,
 avec seulement 34 tests exécutés ; il n’a pas été compté comme réussi. Le passage
