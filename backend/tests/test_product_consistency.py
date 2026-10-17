@@ -126,8 +126,9 @@ def test_clarifications_are_not_counted_as_human_escalations(client, auth_header
             db.add(
                 ConversationLog(
                     org_id=tenant_id(auth_headers),
-                    channel="admin",
+                    channel="widget",
                     question="Which subject?",
+                    outcome="escalated" if human else "clarification",
                     answer="More information needed",
                     resolved=False,
                     needs_human=human,
@@ -222,6 +223,7 @@ def test_document_usage_counts_one_document_per_answer(client, auth_headers):
                 org_id=doc.org_id,
                 channel="widget",
                 question="Guide summary?",
+                outcome="answered",
                 answer="Answer",
                 resolved=True,
                 needs_human=False,

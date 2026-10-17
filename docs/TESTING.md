@@ -1,5 +1,120 @@
 # Verification Ledger
 
+## Revue de publication du 17 octobre 2026
+
+La revue couvre toutes les modifications en attente : présentation publique, formulaires,
+sessions et changement de compte, tableaux de bord, classification des interactions,
+confidentialité des URL sources, admission concurrente et maintenance du débit. Les frontières
+Super Admin, Tenant Admin, Support Agent et visiteur restent celles de [l'architecture](ARCHITECTURE.md).
+La migration **0008** est requise ; le service Compose de migration applique la tête avant
+le démarrage de l'API et des workers. Aucune base utilisateur n'a été modifiée par cette revue.
+
+TanStack Start passe à **1.169.3** et Router à **1.170.45**, avec le lockfile associé.
+Cela retire les cinq alertes critiques de dépendances liées à
+[GHSA-qx66-fv34-fjm8](https://github.com/advisories/GHSA-qx66-fv34-fjm8).
+Le type officiel `ErrorComponentProps` accepte désormais une erreur `unknown` ; la frontière
+racine utilise ce contrat sans exposer de détails dans son message visible.
+La CI contrôle aussi l'égalité du moteur de démo et `npm audit --audit-level=high`.
+
+Vérifications locales exécutées avec Node **24.21.0**, Python **3.13.3** et la `.venv` existante :
+
+| Périmètre | Résultat |
+|---|---|
+| Backend `pytest -q --tb=short --cov=app --cov-report=term-missing` | **192 PASS**, 152,31 s, **92 %** de couverture mesurée ; rôles, isolation, invitations, quotas, migrations, analytics, confidentialité et concurrence inclus. |
+| Ruff depuis `backend/`, puis scripts avec la configuration backend | **PASS** ; exécuter depuis les répertoires documentés pour conserver la classification des imports. |
+| ESLint sans avertissement, `tsc --noEmit`, build client/SSR et smoke du serveur de production | **PASS**, livraison du moteur natif de démo et des polices locales incluse. |
+| Vitest `--pool=threads --maxWorkers=1` | **65 PASS**, 9 fichiers, 42,36 s. |
+| Playwright groupé avec Chrome et Mailpit, sans installation parallèle | **22 PASS**, 9 fichiers, 3,3 min ; public, rôles, deux espaces, SMTP, sessions inter-onglets et widget externe. |
+| Mailer `node --test` et opérateur `unittest discover -s scripts/tests -v` | **8 PASS** et **12 PASS**. |
+| Documentation des fichiers/contrats | **PASS** : 319 fichiers, 667 déclarations Python, 459 JS/TS, aucune entrée manquante. |
+| `sync-marketing-widget.mjs --check` | **PASS** : copie publique identique octet par octet au widget de production inchangé. |
+| Audits npm frontend et mailer | **0 vulnérabilité signalée** pour les deux arbres. Installation propre du lockfile vérifiée séparément avec npm 11. |
+| `pip-audit` dans la `.venv`, puis `pip check` | Aucune vulnérabilité connue sur les paquets audités ; roue CPU `torch==2.14.0+cpu` absente de PyPI et explicitement **non auditée**. Aucune dépendance cassée. |
+| MiniLM/Groq sur base jetable, `HF_HUB_OFFLINE=1 verify_local_knowledge.py --groq` | **PASS réel** : vecteurs 384D persistés, exclusion du locataire étranger, salutation et réponse sourcée HTTP 200 ; uniquement politique de livraison synthétique. |
+| Syntaxe Git Bash des cinq scripts `.sh` | **PASS**. |
+| PostgreSQL/pgvector local | **1 SKIP** : `TEST_POSTGRES_URL` absent. |
+| Docker/Compose local et VM cible | **NON EXÉCUTÉS** : Docker indisponible sur cet hôte ; aucune publication Git n'est une preuve de déploiement. |
+
+La première campagne navigateur groupée a passé 20 parcours et échoué sur les deux attentes
+inter-onglets, pendant qu'une installation propre des dépendances tournait en parallèle.
+Un diagnostic séparé a ensuite confirmé la réception de l'événement de stockage, le retrait
+du contenu privé et la redirection immédiate. La campagne complète relancée seule a passé
+**les 22 parcours ensemble en 3,3 minutes**, avec les assertions et délais d'origine ; les deux
+parcours inter-onglets passent en 2,1 et 3,6 secondes. Le premier résultat n'est pas présenté
+comme un succès et aucune cause d'application non reproduite n'est affirmée.
+Les manques de commentaires/inventaire et l'incompatibilité de type détectés au premier
+contrôle ont été corrigés avant la validation finale. npm 10 a échoué sur sa résolution
+`edgesOut` ; npm 11 a résolu puis installé le même projet avec un audit sans vulnérabilité.
+
+Les traces locales sont dans `logs/release-review/`, ignoré par Git. Les exécutions CI
+postérieures doivent être consultées pour le SHA publié ; les succès historiques ci-dessous
+ne remplacent jamais le résultat du nouveau commit.
+
+## Instance native persistante du 17 octobre 2026
+
+Le lancement réel a passé **21 contrôles** sur <http://localhost:5173> et l'API 8000,
+avec les deux workers et Mailpit 8025 actifs. Une sauvegarde cohérente de la base locale
+préexistante a précédé les migrations **0006 → 0008** ; intégrité SQLite `ok`, aucune
+violation de clé étrangère, tous les identifiants de lignes préexistantes conservés.
+
+Le scénario synthétique vérifie les connexions plateforme/entreprise et leurs restrictions,
+les réglages et la politique Origin, l'import réellement traité par la file d'ingestion,
+les vecteurs persistants 384D, les réponses Groq sourcées widget/Playground, la salutation,
+les analytics visiteurs, l'escalade/résolution humaine et son retour au visiteur, une
+nouvelle session lisant les documents persistés, ainsi que l'outbox livrée dans Mailpit.
+Le premier contrôle des domaines supposait un ordre de liste : l'API renvoie correctement
+un ensemble trié. Le contrôle a été corrigé pour comparer les domaines indépendamment de
+l'ordre, puis les 21 contrôles ont passé ensemble.
+
+Preuves privées générées : `logs/native-verification.json`, `logs/native-final-health.json`
+et `logs/native-stack-state.json`. Les accès créés sont dans `data/local-access.json`,
+ignoré par Git, et la sauvegarde dans `data/backups`. Le stockage local est SQLite/JSON,
+dont la santé pgvector est signalée dégradée ; PostgreSQL et Docker restent non exécutés.
+Cette exécution ajoute une preuve API/workers/stockage/IA réelle ; les parcours navigateur
+restent ceux de la campagne ci-dessous.
+
+## Audit fonctionnel et corrections du 16 octobre 2026
+
+Le [rapport français en huit parties](AUDIT.md#audit-fonctionnel-local-du-16-octobre-2026)
+décrit les corrections, leur cause, la matrice fonctionnelle, les fichiers et les limites.
+Les URL privées sont préservées pour l'ingestion et filtrées à la sortie ; les statistiques
+comptent les résultats explicites des visiteurs ; les sessions rejettent les opérations dépassées ;
+le nettoyage des événements de débit est effectué hors admission par le worker existant.
+La migration **0008** est requise. La campagne initiale ci-dessous n'a migré aucune base
+native ; le démarrage ultérieur du 17 octobre l'a appliquée localement, comme décrit ci-dessus.
+Aucune installation distante n'a été migrée.
+
+Commandes de cette campagne, avec la `.venv` existante et Node **24.21.0** du cache local :
+
+| Commande / périmètre | Résultat exécuté |
+|---|---|
+| `python -m pytest -q --tb=short --cov=app --cov-report=term-missing` (backend, final) | **PASS : 192**, **186,62 s**, couverture **92 %** (3590 instructions, 290 non couvertes) ; 8 tests analytics dédiés également passés |
+| `ruff check .` (backend), puis `ruff check ../scripts --config pyproject.toml` | **PASS** |
+| ESLint `--max-warnings=0`, `tsc --noEmit` (frontend) | **PASS** |
+| `vitest run --pool=threads --maxWorkers=1` (frontend) | **PASS : 57 tests / 8 fichiers** |
+| `vite build`, puis `node scripts/check-production.mjs` (frontend) | **PASS** sur les dernières sources : client/SSR, pages et polices locales, URL malformée |
+| `playwright test` avec `MAILPIT_BINARY` (frontend) | **PASS : 13 parcours ensemble, 2,6 minutes** ; changement de compte inter-onglets inclus |
+| `node --test` (mailer) | **PASS : 8** |
+| `python -m unittest discover -s scripts/tests -v`, `pip check` (racine) | **PASS : 12**, dépendances cohérentes |
+| Compose autonome `--env-file .env.example config --quiet`, HTTP puis overlay TLS | **PASS** ; configuration uniquement |
+| Git Bash `-n` | **PASS : 5 scripts** |
+| `python scripts/check_documentation.py --node NODE_24 --json` | **PASS : aucune entrée manquante** |
+| `HF_HUB_OFFLINE=1 python scripts/verify_local_knowledge.py --groq` (backend) | **PASS réel** : MiniLM384, persistance/isolement, Groq salutation et réponse sourcée HTTP 200 |
+| `python -m pytest integration -q -rs` (backend) | **SKIPPED : 1**, `TEST_POSTGRES_URL` absent |
+| Docker Engine, stack conteneurisée, restauration réelle de volumes et VM cible | **NOT EXECUTED** : Engine non disponible ; les succès CI historiques ne valident pas cette révision locale |
+
+Les premières exécutions ont réellement échoué : double import des fixtures (URL SQL héritée
+différente), démarrage client Vite intermittent et une attente après remboursement. Le paquet
+de tests est maintenant unique ; une régression protège l'URL héritée par les sous-processus.
+Vite prépare les modules fréquents ; les diagnostics de démarrage excluent corps/en-têtes/requêtes.
+Les assertions et délais existants sont conservés. Le préchargement a passé un parcours
+administratif isolé puis la campagne complète, sur deux démarrages distincts ; la cause exacte
+du rejet initial de module n'est pas établie. Le test de bornes BI a d'abord reproduit 1 contre 0,
+puis passé après alignement des fins exclusives. Un warning amont Starlette/httpx demeure.
+
+Le smoke Groq utilise seulement la politique synthétique « Shipping delivery takes three
+working days ». Aucune livraison SMTP externe, donnée client ni publication n'est incluse.
+
 ## Phase-1 and documentation completion: 2026-10-16
 
 The supplied bilingual roadmap was re-read against the current project. The French

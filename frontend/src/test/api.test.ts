@@ -21,8 +21,159 @@ import {
   updateWidgetSettings,
   getWidgetSettings,
   publicApiUrl,
+  logout,
+  apiRequest,
 } from "@/lib/api";
+
+/** Allow each test to choose the exact order in which network requests complete. */
+function controlledFetch() {
+  const finish: ((response: Response) => void)[] = [];
+  const fetch = vi.fn(() => new Promise<Response>((resolve) => finish.push(resolve)));
+  vi.stubGlobal("fetch", fetch);
+  return { fetch, finish };
+}
+
+/** Encode a synthetic authentication result without contacting an account service. */
+function sessionResponse(token: string) {
+  return new Response(JSON.stringify({ access_token: token, user: { role: "tenant_admin" } }));
+}
+
 describe("API contracts", () => {
+  it("lets the latest login finish after an earlier request returns an expired-session response", async () => {
+    setToken("expired");
+    const { finish } = controlledFetch();
+    const oldRequest = getSubscriptionUsage();
+    const rejected = expect(oldRequest).rejects.toThrow();
+    const signingIn = login("new@example.com", "password");
+    finish[0](new Response("{}", { status: 401 }));
+    await rejected;
+    finish[1](sessionResponse("fresh"));
+    await signingIn;
+    expect(getToken()).toBe("fresh");
+  });
+  it("marks an older authentication failure as superseded while the latest login is pending", async () => {
+    clearToken();
+    const { finish } = controlledFetch();
+    const older = login("older@example.com", "wrong-password");
+    const rejected = expect(older).rejects.toMatchObject({ name: "SessionChangedError" });
+    const newer = login("newer@example.com", "password");
+    finish[0](new Response("{}", { status: 401 }));
+    await rejected;
+    finish[1](sessionResponse("latest"));
+    await newer;
+    expect(getToken()).toBe("latest");
+  });
+  it("identifies a failed fetch from an obsolete session before account cleanup can run", async () => {
+    setToken("old");
+    let fail!: (error: Error) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((_, reject) => (fail = reject))),
+    );
+    const request = login("old@example.com", "password");
+    const rejected = expect(request).rejects.toMatchObject({ name: "SessionChangedError" });
+    setToken("new");
+    fail(new Error("Connection interrupted"));
+    await rejected;
+    expect(getToken()).toBe("new");
+  });
+  it.each(["older-first", "newer-first"])(
+    "keeps the latest login when %s completes",
+    async (order) => {
+      clearToken();
+      const { finish } = controlledFetch();
+      const older = login("older@example.com", "password");
+      const rejected = expect(older).rejects.toThrow("Session changed");
+      const newer = login("newer@example.com", "password");
+      if (order === "older-first") {
+        finish[0](sessionResponse("older"));
+        await rejected;
+        expect(getToken()).toBeNull();
+        finish[1](sessionResponse("newer"));
+      } else {
+        finish[1](sessionResponse("newer"));
+        await newer;
+        finish[0](sessionResponse("older"));
+      }
+      await newer;
+      await rejected;
+      expect(getToken()).toBe("newer");
+    },
+  );
+  it.each([true, false])(
+    "orders registration and login together (registration first: %s)",
+    async (registrationFirst) => {
+      clearToken();
+      const { finish } = controlledFetch();
+      /** Start either public authentication flow under the shared sequencing rule. */
+      const start = (registration: boolean) =>
+        registration
+          ? register({
+              organization_name: "New org",
+              admin_email: "new@example.com",
+              password: "password",
+            })
+          : login("account@example.com", "password");
+      const older = start(registrationFirst);
+      const rejected = expect(older).rejects.toThrow("Session changed");
+      const newer = start(!registrationFirst);
+      finish[1](sessionResponse("latest"));
+      await newer;
+      finish[0](sessionResponse("obsolete"));
+      await rejected;
+      expect(getToken()).toBe("latest");
+    },
+  );
+  it("does not restore a pending anonymous login after logout", async () => {
+    clearToken();
+    const { finish } = controlledFetch();
+    const pending = login("account@example.com", "password");
+    const rejected = expect(pending).rejects.toThrow("Session changed");
+    logout();
+    finish[0](sessionResponse("cancelled"));
+    await rejected;
+    expect(getToken()).toBeNull();
+  });
+  it("rejects a response initiated anonymously when another request signs in", async () => {
+    clearToken();
+    const { finish } = controlledFetch();
+    const anonymous = apiRequest("/settings/widget");
+    const rejected = expect(anonymous).rejects.toThrow("Session changed");
+    setToken("signed-in");
+    finish[0](new Response(JSON.stringify({ private: "outdated" })));
+    await rejected;
+  });
+  it("detects a logout/login cycle even if the same token is restored", async () => {
+    setToken("same-token");
+    const { finish } = controlledFetch();
+    const pending = getWidgetSettings();
+    const rejected = expect(pending).rejects.toThrow("Session changed");
+    logout();
+    setToken("same-token");
+    finish[0](new Response("{}"));
+    await rejected;
+  });
+  it("rejects a login superseded by a cross-tab session event", async () => {
+    clearToken();
+    const { finish } = controlledFetch();
+    const pending = login("account@example.com", "password");
+    const rejected = expect(pending).rejects.toThrow("Session changed");
+    window.localStorage.setItem("supportdeflect_admin_token", "other-tab");
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "supportdeflect_admin_token", storageArea: localStorage }),
+    );
+    finish[0](sessionResponse("obsolete"));
+    await rejected;
+    expect(getToken()).toBe("other-tab");
+  });
+  it("does not clear a valid account when a new login has invalid credentials", async () => {
+    setToken("valid-session");
+    const fetch = vi.fn().mockResolvedValue(new Response("{}", { status: 401 }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(login("wrong@example.com", "incorrect")).rejects.toThrow();
+    expect(new Headers(fetch.mock.calls[0][1].headers).has("Authorization")).toBe(false);
+    expect(getToken()).toBe("valid-session");
+  });
   it("notifies same-tab and cross-tab session changes and unsubscribes cleanly", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeSession(listener);

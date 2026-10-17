@@ -23,9 +23,29 @@ test("administration shares the customer brand across every view and viewport", 
 }, testInfo) => {
   test.setTimeout(180000);
   const errors: string[] = [];
+  const failedModules: { path: string; detail: string }[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("requestfailed", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (!path.startsWith("/api/"))
+      failedModules.push({ path, detail: request.failure()?.errorText ?? "failed" });
+  });
+  page.on("response", (response) => {
+    const path = new URL(response.url()).pathname;
+    if (!path.startsWith("/api/") && response.status() >= 400)
+      failedModules.push({ path, detail: String(response.status()) });
+  });
   await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill("operator@example.com");
+  try {
+    await page.getByLabel("Email", { exact: true }).fill("operator@example.com");
+  } catch (error) {
+    // Retain cold-start diagnostics without query strings, headers, bodies or credentials.
+    await testInfo.attach("client-startup.json", {
+      body: JSON.stringify({ errors, failedModules }),
+      contentType: "application/json",
+    });
+    throw error;
+  }
   await page.getByLabel("Password", { exact: true }).fill(process.env.E2E_ADMIN_PASSWORD!);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Business overview" })).toBeVisible();

@@ -14,7 +14,13 @@ import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser, useLogout, useRequireAuth } from "@/hooks/use-auth";
-import { apiRequest, homeForRole, login, logout as clearSession } from "@/lib/api";
+import {
+  apiRequest,
+  homeForRole,
+  login,
+  logout as clearSession,
+  SessionChangedError,
+} from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/change-password")({ component: ChangePassword });
@@ -62,7 +68,8 @@ function ChangePassword() {
         cache.clear();
         cache.setQueryData(["me"], result.user);
         void navigate({ to: homeForRole(result.user.role) });
-      } catch {
+      } catch (err) {
+        if (err instanceof SessionChangedError) return;
         // The password mutation already succeeded; never ask to repeat it with invalid old credentials.
         clearSession();
         cache.clear();

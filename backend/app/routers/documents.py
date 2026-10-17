@@ -9,6 +9,7 @@ from sqlalchemy import desc, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.source_urls import public_source_url
 from app.db import get_db
 from app.deps import get_tenant_admin_org
 from app.models import Document, IngestionJob, Organization
@@ -106,7 +107,7 @@ def index_url(
     enforce_document_quota(db, org, upload_size=0)
     document = Document(
         org_id=org.id,
-        title=payload.title or url[:255],
+        title=payload.title or public_source_url(url)[:255],
         source_type="url",
         source=url,
         mime_type="text/html",

@@ -182,6 +182,7 @@ def test_analytics_counts_every_row_not_just_latest_ten(client, auth_headers):
                     question="Repeated question",
                     answer="Answer",
                     resolved=index < 20,
+                    outcome="answered" if index < 20 else "escalated",
                     needs_human=index >= 20,
                     channel="widget",
                     created_at=datetime.now(UTC),

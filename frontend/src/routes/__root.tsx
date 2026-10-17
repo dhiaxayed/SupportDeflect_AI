@@ -13,6 +13,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import "@fontsource/inter/latin-400.css";
@@ -56,7 +57,7 @@ function NotFoundComponent() {
  * Report a client route failure locally and offer router invalidation/reset or home
  * navigation; the visible message excludes raw exception details.
  */
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     console.error("Root route error boundary", error);

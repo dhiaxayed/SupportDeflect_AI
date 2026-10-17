@@ -30,6 +30,10 @@ def test_migrations_empty_and_legacy_data(tmp_path):
             'trial', 'active', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)""")
         conn.exec_driver_sql("""INSERT INTO users VALUES
             ('user', 'org', 'user@example.com', 'User', 'hash', 'admin', 1, CURRENT_TIMESTAMP)""")
+        conn.exec_driver_sql("""INSERT INTO conversation_logs
+            (id, org_id, channel, question, answer, confidence_score, resolved, needs_human,
+             sources, latency_ms, created_at)
+            VALUES ('legacy', 'org', 'widget', 'Hello', 'Hi', 0, 1, 0, '[]', 0, CURRENT_TIMESTAMP)""")
     command.upgrade(config, "head")
     command.upgrade(config, "head")
     with engine.connect() as conn:
@@ -39,6 +43,8 @@ def test_migrations_empty_and_legacy_data(tmp_path):
         )
         assert conn.exec_driver_sql("SELECT version_num FROM alembic_version").scalar() == required_schema_revision()
         assert "embedding_model" in {column["name"] for column in inspect(conn).get_columns("vector_chunks")}
+        assert conn.exec_driver_sql("SELECT outcome FROM conversation_logs WHERE id='legacy'").scalar() is None
+        assert "ix_rate_limit_created" in {index["name"] for index in inspect(conn).get_indexes("rate_limit_events")}
         assert {"billing_entries", "mail_messages", "mail_automations", "mail_worker_state"} <= set(
             inspect(conn).get_table_names()
         )

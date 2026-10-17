@@ -7,9 +7,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useState } from "react";
-import { Headset } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
-import { BrandLogo } from "@/components/brand-logo";
+import { AuthShell } from "@/components/marketing/auth-shell";
+import { publicFontLinks } from "@/components/marketing/public-font";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/login")({
   /**
    * Set the sign-in document title while retaining root metadata and asset links.
    */
-  head: () => ({ meta: [{ title: "Log in — SupportDeflect AI" }] }),
+  head: () => ({ meta: [{ title: "Log in — SupportDeflect AI" }], links: [...publicFontLinks] }),
   component: Login,
 });
 
@@ -57,79 +58,58 @@ function Login() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-sm space-y-6">
-          <Link to="/" className="flex items-center gap-2">
-            <BrandLogo imageClassName="h-9 max-w-[190px]" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Log in to your workspace to manage your assistant.
-            </p>
+    <AuthShell mode="login">
+      <span className="sd-auth-form-eyebrow sd-mono">PICK UP WHERE YOU LEFT OFF</span>
+      <h1>Welcome back</h1>
+      <p className="sd-auth-description">Log in to your workspace to manage your assistant.</p>
+      <form onSubmit={onSubmit}>
+        <fieldset disabled={!hydrated || loading}>
+          <div className="sd-auth-field">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              autoComplete="email"
+              required
+            />
           </div>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <fieldset disabled={!hydrated || loading} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="pw">Password</Label>
-                </div>
-                <Input
-                  id="pw"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in…" : "Sign in"}
-              </Button>
-            </fieldset>
-          </form>
-          <p className="text-center text-sm text-muted-foreground">
-            New here?{" "}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              Create an account
-            </Link>
-          </p>
-        </div>
+          <div className="sd-auth-field">
+            <Label htmlFor="pw">Password</Label>
+            <Input
+              id="pw"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          <Button type="submit" className="sd-button sd-auth-submit" disabled={loading}>
+            {loading ? (
+              <>
+                Signing in… <LoaderCircle size={17} className="sd-submit-spinner" />
+              </>
+            ) : (
+              <>
+                Sign in <ArrowUpRight size={17} />
+              </>
+            )}
+          </Button>
+        </fieldset>
+      </form>
+      <p className="sd-auth-switch">
+        New here?{" "}
+        <Link to="/register">
+          Create an account <ArrowUpRight size={13} />
+        </Link>
+      </p>
+      <div className="sd-auth-form-note">
+        <span className="sd-status-dot" /> Your knowledge, ready for the next conversation.
       </div>
-      <aside
-        className="hidden lg:flex items-center justify-center p-12"
-        style={{ background: "var(--gradient-subtle)" }}
-      >
-        <div className="max-w-md space-y-6 text-center">
-          <div
-            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-elegant)" }}
-          >
-            <Headset className="h-6 w-6 text-white" />
-          </div>
-          <p className="text-lg font-medium">
-            Answers grounded in your documentation. A support team ready for the questions that need
-            a human touch.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Your knowledge. Your brand. Your workspace.
-          </p>
-        </div>
-      </aside>
-    </div>
+    </AuthShell>
   );
 }

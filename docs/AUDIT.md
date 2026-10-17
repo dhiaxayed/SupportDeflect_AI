@@ -1,5 +1,176 @@
 # Final Repository Audit
 
+## Revue avant publication du 17 octobre 2026
+
+L'ensemble des modifications locales a été relu par responsabilité : public et authentification,
+transport de session, espaces locataire/plateforme, analytics et données métier, URLs privées,
+traitement des documents, débit et migration 0008. La présentation publique utilise désormais
+une composition HTML lisible sans Three.js ; la démo réemploie exactement le moteur réel dans
+une iframe opaque avec des réponses locales et sans API. Les trois rôles internes restent
+contrôlés côté serveur ; un Super Admin n'obtient pas une appartenance implicite aux locataires.
+
+La revue corrige les alertes critiques TanStack par des versions corrigées et adapte le type
+de la frontière d'erreur racine au contrat courant. Les nouveaux modules et tests sont expliqués
+dans l'inventaire français, et la CI vérifie la fidélité de la copie du widget et l'audit npm.
+Les preuves, échecs initiaux et limites locales sont consignés dans [TESTING.md](TESTING.md),
+sans transformer un PostgreSQL sauté, un Docker indisponible ou une VM non déployée en succès.
+
+## Démarrage de la base native du 17 octobre 2026
+
+À la demande de l'utilisateur, l'application existante a été démarrée sur
+<http://localhost:5173>, avec API, worker d'ingestion, mailer et Mailpit
+(<http://127.0.0.1:8025>). Les cinq processus sont actifs sous le superviseur natif.
+Une sauvegarde SQLite cohérente et vérifiée a précédé les migrations **0006 → 0008**.
+Les identifiants de toutes les lignes préexistantes des organisations, utilisateurs,
+documents, vecteurs et jobs sont conservés. `PRAGMA quick_check` retourne `ok` et
+`PRAGMA foreign_key_check` ne trouve aucune violation.
+
+**21 contrôles ont passé sur cette instance persistante**, avec un nouvel espace de
+démonstration isolé : connexion plateforme/entreprise, santé Groq réelle, worker SMTP local,
+réglages persistants, politique Origin, escalade et réponse humaine jusqu'au visiteur,
+import en file puis indexation par le worker, vecteurs persistants de dimension 384,
+réponse Groq sourcée, salutation, Playground, compteurs visiteurs séparés, restrictions
+de rôles, nouvelle connexion conservant les documents et courriel réellement capturé.
+Seul le contenu synthétique de démonstration est utilisé pour ces questions IA.
+
+Les accès de démonstration et plateforme sont conservés dans le fichier privé ignoré
+`data/local-access.json`. Les preuves générées sont `logs/native-verification.json`,
+`logs/native-final-health.json` et `logs/native-stack-state.json`. La sauvegarde est dans
+`data/backups`. Aucun ancien compte n'a été promu ni son mot de passe remplacé.
+
+Ce démarrage utilise **SQLite persistant**, conformément au mode natif local. Le statut
+pgvector dégradé est attendu pour son stockage JSON ; PostgreSQL/Docker et la VM cible
+restent hors de cette preuve. Les 13 parcours navigateur de la campagne précédente restent
+la preuve UI : aucun nouveau parcours navigateur n'est revendiqué pour ce démarrage natif.
+
+## Audit fonctionnel local du 16 octobre 2026
+
+### 1. Synthèse
+
+Les quatre corrections prioritaires sont implémentées : confidentialité des URL sources,
+indicateurs métier, concurrence des sessions et admission en base. L'audit a également corrigé
+les erreurs de validation qui renvoyaient les entrées privées, un double chargement des fixtures
+de tests et les bornes temporelles contradictoires des graphiques métier.
+
+Les parcours existants ont été inspectés dans les routes, services, modèles, workers et
+consommateurs frontend. Les vérifications exécutées sont distinguées ci-dessous des composants
+seulement inspectés. Aucun push, déploiement ou changement de données de production n'a été effectué.
+
+### 2. Problèmes trouvés et corrigés
+
+| Problème initial et cause | Correction et fichiers principaux | Régression et résultat |
+|---|---|---|
+| Les URL complètes étaient copiées dans les titres, vecteurs et citations, exposant les paramètres d'accès. | `core/source_urls.py`, `schemas.py`, `routers/documents.py`, `services/ingestion.py`, `rag.py`, `routers/platform.py` : l'ingestion conserve l'URL privée ; les métadonnées publiées gardent origine/chemin et identité du document. Les anciennes citations et les titres restent protégés à la sérialisation. Aucun changement de schéma URL. | 10 tests de confidentialité : paramètres encodés/casse variable/signatures, téléchargement intact, réponses document/chat/widget/dossier, anciennes métadonnées et journaux. PASS. |
+| Playground et salutations gonflaient la résolution ; les booléens historiques ne distinguaient pas les pannes et clarifications. | `models.py`, migration `0008`, `rag.py`, `analytics.py`, `business.py`, `routers/platform.py` et écrans analytics : résultat explicite persisté, périmètre visiteurs commun, compteurs séparés, libellés « AI answer rate ». L'historique inconnu est séparé ; aucune déflexion confirmée n'est inventée. | 8 tests dédiés aux résultats et métriques, plus régressions existantes actualisées avec des résultats explicites. PASS. |
+| Des réponses de connexion/inscription pouvaient s'imposer dans le désordre ; le contrôle ne protégeait pas les requêtes initialement anonymes. | `frontend/src/lib/api.ts` : dernière tentative commune, révision de session, contrôle des succès et erreurs réseau/décodage, rejet après logout/changement d'onglet et protection contre les 401 tardifs. `change-password.tsx` préserve un nouveau compte si la reconnexion automatique est dépassée. | Ordre des réponses contrôlé dans les tests API ; remplacement réel du cache de documents après changement de compte dans un autre onglet. PASS. |
+| Chaque admission lançait un DELETE global des événements expirés. | `rate_limiter.py` : comptage indexé par clé/fenêtre sous verrou transactionnel ; `run_ingestion_worker.py` nettoie par lots de 1000 hors requêtes. Migration `0008` : index temporel. SQLite réserve son writer avant lecture ; PostgreSQL conserve ses verrous consultatifs. | 9 tests : limite, expiration exacte, SQL sans DELETE d'admission, clés communes/distinctes, trois processus réels, nettoyage borné et panne de commit. PASS sur SQLite. Concurrence PostgreSQL ajoutée, non exécutée localement. |
+| Les erreurs Pydantic incluaient l'entrée brute ; les journaux ne couvraient pas toutes les URL encodées. | `main.py` conserve loc/type/msg sans input/ctx ; `core/logging.py` retire les requêtes des URL HTTP et des cibles d'accès Uvicorn. Les exceptions restent diagnostiquables sans leurs valeurs privées. | Régressions URL/mot de passe invalide et formats réels des journaux HTTP/Uvicorn. PASS. |
+| `conftest.py` pouvait être importé sous deux identités et remplacer DATABASE_URL après création de l'engine. | `backend/tests/__init__.py` donne une identité unique au paquet ; le test multiprocessus vérifie que l'URL héritée est celle de l'engine. | Échec reproduit « no such table », puis 16 tests concernés passés ensemble et suite complète verte. |
+| Graphiques et compteurs utilisaient des bornes différentes ; une inscription arrivée après l'instant du rapport apparaissait uniquement dans le graphique. | `business.py` utilise la même fin exclusive pour questions, encaissements et nouvelles organisations, y compris les classements d'usage. | Test à horloge contrôlée : échec initial 1 contre 0, puis égalité des séries et compteurs. PASS. |
+
+Le démarrage Vite a aussi montré des échecs intermittents de chargement du module client avant
+hydratation. `vite.config.ts` précharge le routeur et la connexion avec l'option
+[warmup documentée par Vite](https://vite.dev/config/server-options#server-warmup).
+Deux démarrages distincts avec cette configuration ont passé le parcours administratif, dont
+la campagne finale de 13 parcours. Les diagnostics du test conservent uniquement chemins et
+catégories d'échec des ressources, sans en-têtes, paramètres ou corps. Aucun délai ni assertion
+n'a été assoupli. La cause exacte du premier rejet de module n'est pas établie ; cette mesure
+ne constitue pas une preuve de stabilité universelle du serveur de développement.
+
+### 3. Matrice de validation fonctionnelle
+
+| Domaine | Vérifications réellement exécutées | Limite de la preuve |
+|---|---|---|
+| Authentification | API inscription/login/révocation, concurrence déterministe, logout et changements d'onglet en navigateur | Comptes de test uniquement |
+| Utilisateurs et rôles | Permissions API, invitations, activation et remplacement de mot de passe en navigateur | Parcours maintenus, pas toutes les combinaisons possibles |
+| Organisations et multi-tenancy | Isolation API/recherche, création, archivage/restauration et administration en navigateur | Bases de test uniquement |
+| Ingestion documentaire | Fichiers, URL contrôlées, jobs/reprises/suppression/concurrence ; indexation MiniLM réelle | Pas de téléchargement d'un site tiers réel dans cette campagne |
+| RAG | Régressions de preuves, clarification/pannes ; salutation et réponse sourcée Groq réelles | Documents synthétiques ; ne prouve pas la justesse de toute génération |
+| Widget intégré | Snippet sur hôte indépendant, configuration, chat, escalade et réponse humaine | Fournisseurs simulés pour les parcours navigateur |
+| Studio | Persistance, logo, aperçu partagé, options et rendu mobile/desktop | Fournisseurs simulés dans l'aperçu navigateur |
+| Dossiers support | Permissions, assignation, notes, états, résolution et capacité visiteur | Parcours API/navigateur exécutés sur fixtures |
+| Analytics | Résultats persistés, dénominateurs, historique inconnu, isolation, séries/périodes et écrans | Déflexion réelle non mesurée, valeur null explicite |
+| Abonnements et facturation | Quotas/concurrence, expiration, périodes, paiements/remboursements et idempotence ; parcours UI | Registre manuel, aucun paiement externe exécuté |
+| Mailing et notifications | Tests worker/templates et parcours SMTP Mailpit réel, invitation et confirmation | Acceptation SMTP locale, aucune livraison externe affirmée |
+| Frontend | Types/lint/tests/build/SSR et 13 parcours, vues maintenues à plusieurs largeurs | Pas de certification WCAG exhaustive ; Browser intégré indisponible, captures Playwright inspectées |
+| Infrastructure | Compose HTTP/TLS, syntaxe shell, readiness/migrations SQLite et tests d'exploitation/restauration isolés | Docker Engine et PostgreSQL/pgvector non exécutés localement |
+
+### 4. Architecture et qualité
+
+L'organisation existante routes → services → modèles/workers est conservée. Les règles de
+périmètre analytique et de confidentialité des URL sont partagées ; login et inscription
+utilisent une même séquence. L'entretien global des événements sort du chemin d'admission,
+en réutilisant le worker existant. Aucun nouveau service, framework, fournisseur ou paquet
+n'est ajouté. Les contrats historiques resolved/resolution_rate restent des alias documentés
+des réponses IA sans escalade. Les quotas continuent à comptabiliser aussi le Playground,
+car ils mesurent l'usage admis, distinct de l'activité support visiteurs.
+
+Les composants fonctionnels, la séparation des rôles, le stockage vectoriel, l'outbox et les
+transactions de facturation n'ont pas été réécrits. Aucune réorganisation cosmétique n'était
+justifiée. La migration conserve les lignes historiques sans leur inventer un résultat.
+
+### 5. Résultats des tests
+
+Baseline : 165 tests backend et 44 tests frontend passés. Environnement local : Python 3.13.3,
+Node 24.21.0 ; l'image/CI Python 3.11 n'a pas été exécutée ici.
+
+| Contrôle | Statut observé |
+|---|---|
+| Pytest complet final avec couverture | PASS : 192 tests en 186,62 s, 92 % (3590 instructions, 290 non couvertes) |
+| Analytics après correction de borne | PASS : 8 tests, dont la nouvelle régression |
+| Ruff backend et scripts | PASS |
+| ESLint sans warning et TypeScript | PASS |
+| Vitest | PASS : 57 tests, 8 fichiers |
+| Playwright final avec Mailpit | PASS : 13 parcours ensemble, 2,6 minutes |
+| Build client/SSR et smoke serveur de production | PASS sur les dernières sources ; résultat consigné dans TESTING.md |
+| Mailer Node | PASS : 8 tests |
+| Exploitation Python | PASS : 12 tests ; pip check sans dépendance cassée |
+| Compose HTTP/TLS et bash -n | PASS : configurations valides et 5 scripts analysés |
+| Documentation | PASS : aucune entrée/contrat documenté manquant |
+| MiniLM/Groq réels | PASS : dimension 384, persistance, isolement, salutation et réponse sourcée HTTP 200 |
+| PostgreSQL/pgvector | SKIPPED : TEST_POSTGRES_URL absent |
+| Démarrage Docker, restauration réelle de volumes et VM cible | NOT EXECUTED : Docker Engine non disponible dans cette session |
+
+Les premières campagnes ont échoué sur le double chargement des fixtures et sur le démarrage
+client Vite ; une autre tentative a dépassé le délai d'affichage après remboursement. Ces échecs
+ne sont pas comptés comme succès. Le parcours de remboursement a ensuite passé avec les
+assertions et délais d'origine. Un warning amont Starlette/httpx subsiste dans Pytest.
+
+### 6. Fichiers changés
+
+Créations : helper `core/source_urls.py`, migration `0008_outcomes_rate_cleanup.py`, paquet
+`tests/__init__.py` et trois modules de régression (`test_source_privacy.py`,
+`test_analytics_outcomes.py`, `test_rate_limiter.py`).
+
+Modifications principales : schémas/modèles et routes document/platform/main ; services
+ingestion/RAG/analytics/business/rate_limiter ; worker d'entretien et fixtures E2E ; client API,
+reconnexion après mot de passe, écrans/graphes/statuts, configuration Vite et tests frontend.
+API.md, SECURITY.md, FILE_GUIDE_FR.md et TESTING.md décrivent les contrats et preuves actuels.
+Aucun fichier fonctionnel ni dépendance n'a été supprimé.
+
+### 7. Limites restantes
+
+La migration 0008 doit précéder le démarrage du code mis à jour dans un environnement existant.
+La campagne initiale l'a testée sur des bases temporaires ; la demande de démarrage suivante
+l'a appliquée à la base native sauvegardée, comme décrit dans la section du 17 octobre.
+Le nettoyage périodique suppose un worker d'ingestion actif. L'URL complète demeure privée
+en base pour l'ingestion ; une citation publique sans requête peut nécessiter un accès séparé
+à une ressource dont l'identité dépend de paramètres. Aucun secret arbitraire présent dans le
+corps d'un document ou dans un chemin URL n'est détecté par ce mécanisme.
+
+Les nouveaux tests de concurrence PostgreSQL sont disponibles pour une base jetable *_test,
+mais pas exécutés ici. Les preuves Docker/CI historiques ci-dessous ne valident pas cette
+révision locale. L'acceptation TLS/backup/restore/redémarrage de la VM cible reste à exécuter.
+
+### 8. Verdict
+
+- Développement : utilisable après migration, avec preuves unitaires/API/UI et intégration IA réelle.
+- Démonstration locale : fixtures puis instance native persistante validées avec scénario IA synthétique ; aucune donnée client requise.
+- Staging : candidate à validation PostgreSQL/pgvector et Docker, puis aux vérifications sur l'hôte cible.
+- Production : non certifiée par cette campagne locale ; les validations externes restantes ne sont pas des PASS.
+
+## Historique antérieur à cette campagne locale
+
 The latest application/documentation execution is the [16 October phase-1 review](../README_SUIVI_PHASE_1.md)
 and [verification ledger](TESTING.md). The [13 October engineering review](QUALITY_REPORT_2026-10-13.md) adds concurrency,
 session/logging privacy, restore/redirect and HTTP compatibility corrections, with 165 backend

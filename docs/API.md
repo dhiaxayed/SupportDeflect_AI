@@ -14,6 +14,7 @@ OpenAPI /openapi.json and /docs are available only when DOCS_ENABLED=true; produ
 Most errors use {"detail":"message"}. Quota errors use
 {"detail":{"code":"quota_or_subscription_required","message":"...","upgrade":"..."}}.
 Validation errors contain a detail array. Callers must handle both forms.
+Validation entries retain loc/type/msg and omit raw input and validator context.
 
 ## Authentication
 
@@ -46,6 +47,9 @@ All these routes require Tenant Admin:
 DocumentOut includes id, title, source_type, source, mime_type, status, chunk_count,
 error_message, is_active, created_at, indexed_at. Queued ingestion initially returns pending;
 poll GET /documents for processing/indexed/failed. Submission is not proof of indexing success.
+URL ingestion keeps the complete fetch URL privately, including access query parameters.
+Document/source responses expose only its HTTP origin/path, without credentials, query or
+fragment. Titles, snippets and legacy case snapshots apply the same response boundary.
 
 ChatResponse example:
 
@@ -117,8 +121,8 @@ Tenant Admin only:
 | GET /settings/widget | Current WidgetSettingsUpdate |
 | PUT /settings/widget | Update branding, origin policy and strictness |
 | GET /settings/subscription | Actual plan, status, limits and current usage |
-| GET /analytics/summary | Totals, AI resolution rate/confidence, questions, top sources |
-| GET /analytics/unresolved | Unresolved AI conversation list |
+| GET /analytics/summary | Classified visitor questions, AI answer rate, outcomes and top sources |
+| GET /analytics/unresolved | Visitor questions originally escalated to human support |
 
 Widget settings body:
 
@@ -137,6 +141,22 @@ Subscription response includes plan/plan_label/status/trial_ends_at,
 documents_used/limit, chunks_used/limit, questions_used_30d/questions_limit_30d,
 max_upload_bytes, advanced_analytics, manual_upgrade_label.
 Human case resolution does not rewrite the original AI conversation or inflate deflection metrics.
+
+Analytics excludes Playground and greetings from customer-support totals. Persisted outcomes are
+answered, escalated, clarification, provider_failure and greeting. Older rows without an outcome
+remain unknown and are reported as legacy_interactions, outside question/rate denominators.
+answered_questions counts documented answers without human escalation. Dividing it by
+total_questions gives answer_rate (0..1); resolved_questions and
+resolution_rate remain compatibility aliases for these AI-answer metrics. Daily resolved has
+the same meaning. Clarifications, provider failures, escalations, greetings, Playground activity
+and human_resolved_cases have separate counters. Escalation counts describe the original AI
+outcome, regardless of later case closure. No customer-confirmed resolution is collected:
+estimated_deflection_rate is null. Question quotas still count all accepted chat interactions,
+including Playground; quota usage is distinct from customer-support analytics.
+
+Platform business metrics use the same classified visitor scope, with rates expressed as
+percentages (0..100). Legacy channel=all does not add administrative testing; channel=admin
+returns zero customer questions. playground_interactions is a separate diagnostic count.
 
 ## Team
 

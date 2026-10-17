@@ -15,7 +15,14 @@ import type { UiDocStatus } from "@/lib/api";
 export function StatusBadge({
   status,
 }: {
-  status: UiDocStatus | "Resolved" | "Unresolved" | "Clarification";
+  status:
+    | UiDocStatus
+    | "Resolved"
+    | "Unresolved"
+    | "Clarification"
+    | "Answered"
+    | "Escalated"
+    | "Service unavailable";
 }) {
   const map = {
     Indexed: { cls: "bg-success/10 text-success border-success/20", Icon: CheckCircle2 },
@@ -23,6 +30,12 @@ export function StatusBadge({
     Failed: { cls: "bg-destructive/10 text-destructive border-destructive/20", Icon: XCircle },
     Draft: { cls: "bg-muted text-muted-foreground border-border", Icon: FileEdit },
     Resolved: { cls: "bg-success/10 text-success border-success/20", Icon: CheckCircle2 },
+    Answered: { cls: "bg-success/10 text-success border-success/20", Icon: CheckCircle2 },
+    Escalated: { cls: "bg-warning/15 text-warning-foreground border-warning/30", Icon: Clock },
+    "Service unavailable": {
+      cls: "bg-destructive/10 text-destructive border-destructive/20",
+      Icon: XCircle,
+    },
     Unresolved: { cls: "bg-destructive/10 text-destructive border-destructive/20", Icon: XCircle },
     Clarification: { cls: "bg-warning/15 text-warning-foreground border-warning/30", Icon: Clock },
   } as const;

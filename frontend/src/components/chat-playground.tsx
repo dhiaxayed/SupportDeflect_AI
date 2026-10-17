@@ -188,7 +188,7 @@ export function ChatPlayground() {
                               : m.reason === "insufficient_knowledge"
                                 ? "Insufficient documentation"
                                 : m.resolved
-                                  ? "Resolved"
+                                  ? "Answered"
                                   : "Needs human review"}
                     </Badge>
                     {m.reason !== "greeting" &&

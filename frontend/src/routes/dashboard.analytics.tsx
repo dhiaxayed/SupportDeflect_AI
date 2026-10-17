@@ -75,7 +75,7 @@ function Analytics() {
     );
 
   const totalConversations = data?.total_questions ?? 0;
-  const deflectionRate = Math.round((data?.resolution_rate ?? 0) * 100);
+  const answerRate = Math.round((data?.answer_rate ?? 0) * 100);
   const avgRetrievalScore = (data?.average_confidence ?? 0).toFixed(2);
   const unresolved = data?.unresolved_questions ?? 0;
   const latest = data?.latest_questions ?? [];
@@ -86,13 +86,17 @@ function Analytics() {
   const unresolvedList = data?.frequent_unresolved ?? [];
 
   const insights: string[] = [];
-  if (deflectionRate > 0)
-    insights.push(`Your assistant resolves ${deflectionRate}% of questions automatically.`);
+  if (answerRate > 0)
+    insights.push(
+      `AI answered ${answerRate}% of visitor questions. Customer resolution is not confirmed.`,
+    );
   if (topDocuments[0]) insights.push(`"${topDocuments[0].title}" is your most referenced source.`);
   if (unresolved > 0)
-    insights.push(`${unresolved} question(s) need human review — consider adding documentation.`);
+    insights.push(
+      `${unresolved} question(s) were escalated. Check the Inbox for their current status.`,
+    );
   if (insights.length === 0)
-    insights.push("Start a few conversations in the Playground to generate insights.");
+    insights.push("Visitor questions from your installed widget will appear here.");
 
   return (
     <>
@@ -103,19 +107,27 @@ function Analytics() {
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title="Conversations"
+            title="Visitor questions"
             value={totalConversations.toLocaleString()}
             icon={MessageSquare}
           />
-          <MetricCard title="AI resolution rate" value={`${deflectionRate}%`} icon={TrendingUp} />
+          <MetricCard title="AI answer rate" value={`${answerRate}%`} icon={TrendingUp} />
           <MetricCard title="Avg retrieval score" value={avgRetrievalScore} icon={Gauge} />
-          <MetricCard title="Unresolved" value={String(unresolved)} icon={AlertCircle} />
+          <MetricCard title="Escalated questions" value={String(unresolved)} icon={AlertCircle} />
         </div>
+        <p className="text-sm text-muted-foreground">
+          Widget questions only; greetings and Playground tests are excluded. The AI answer rate
+          counts documented answers without human escalation. AI answers do not confirm issue
+          resolution or support deflection. {data?.clarification_questions ?? 0} clarifications,{" "}
+          {data?.provider_failures ?? 0} service failures, {data?.human_resolved_cases ?? 0}{" "}
+          human-resolved cases. {data?.legacy_interactions ?? 0} historical interactions have no
+          recorded outcome and are excluded.
+        </p>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader>
-              <CardTitle>Resolved vs Total</CardTitle>
+              <CardTitle>AI answers vs visitor questions</CardTitle>
               <p className="text-sm text-muted-foreground">Last 7 days</p>
             </CardHeader>
             <CardContent>
@@ -153,12 +165,14 @@ function Analytics() {
                     <Bar
                       isAnimationActive={false}
                       dataKey="resolved"
+                      name="AI answered"
                       fill="var(--color-chart-3)"
                       radius={[4, 4, 0, 0]}
                     />
                     <Bar
                       isAnimationActive={false}
                       dataKey="conversations"
+                      name="Visitor questions"
                       fill="var(--color-chart-1)"
                       radius={[4, 4, 0, 0]}
                     />
@@ -215,12 +229,12 @@ function Analytics() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader>
-              <CardTitle>Top unresolved questions</CardTitle>
+              <CardTitle>Most escalated questions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               {unresolvedList.length === 0 && (
                 <p className="px-2 py-6 text-sm text-muted-foreground">
-                  No unresolved questions — nice work!
+                  No escalated questions recorded.
                 </p>
               )}
               {unresolvedList.map((q) => (
@@ -287,10 +301,12 @@ function Analytics() {
                     <StatusBadge
                       status={
                         q.status === "resolved"
-                          ? "Resolved"
+                          ? "Answered"
                           : q.status === "clarification_needed"
                             ? "Clarification"
-                            : "Unresolved"
+                            : q.outcome === "provider_failure"
+                              ? "Service unavailable"
+                              : "Escalated"
                       }
                     />
                   </TableCell>

@@ -83,6 +83,7 @@ def main():
                             question="Synthetic E2E question",
                             answer="Synthetic E2E answer",
                             resolved=resolved,
+                            outcome="answered" if resolved else "escalated",
                             needs_human=not resolved,
                             confidence_score=0.84 if resolved else 0.2,
                             created_at=now - timedelta(days=day, minutes=j),

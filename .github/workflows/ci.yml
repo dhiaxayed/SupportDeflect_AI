@@ -79,6 +79,8 @@ jobs:
       - run: npm ci
       # Presence/grammar gate: named source contracts plus the maintained per-file French guide.
       - run: python3 ../scripts/check_documentation.py
+      - run: node scripts/sync-marketing-widget.mjs --check
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:run

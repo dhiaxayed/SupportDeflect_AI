@@ -19,6 +19,11 @@ the next account's cache. Server-side tenant authorization remains the authority
 Concurrent creation of the same email is resolved by the database uniqueness constraint and
 translated to the existing HTTP 409 contract after rollback; incomplete organizations/outboxes
 are not retained. Other database integrity failures retain their original failure path.
+Login and registration share a latest-attempt sequence. A session revision rejects responses
+after logout, cross-tab changes, account switching and same-token logout/login cycles, even
+when a request started anonymously. Failed public login does not revoke an existing session.
+Superseded password reauthentication cannot clear a newer account. Session events clear the
+shared React Query cache; server JWT version checks continue to enforce actual authorization.
 
 ## Public Widget
 
@@ -48,8 +53,19 @@ Environment proxies are disabled for this fetcher. Redirect count, timeout and s
 size are bounded; compressed URL responses are refused to avoid unbounded decompression.
 Host-level egress policy remains useful defense in depth.
 
-Imported source URLs are returned in visitor-visible citations, including their query strings.
-Import public, non-token URLs; a private share URL is not made confidential by ingestion.
+Complete source URLs remain private ingestion data, including access query parameters.
+Public citation/document metadata omits URL credentials, queries and fragments, including
+legacy titles and case-source snapshots. File names, document IDs, titles and HTTP paths
+retain source attribution. Query-dependent links may require separate access at the source.
+This boundary protects source URL metadata; it is not a secret scanner for arbitrary document
+prose or credentials embedded in URL paths. Do not upload secret-bearing knowledge.
+HTTP client/server logs sanitize source URLs; validation errors omit raw input/context.
+
+Database rate admission uses indexed key/time counts under PostgreSQL advisory locks or a
+SQLite writer reservation. No global deletion runs during admission. The existing ingestion
+worker removes up to 1000 expired events in separate transactions, normally every minute and
+more often while a backlog remains. Retention is one day, the maximum supported rate window;
+all HTTP routes retain their existing 60-second policy. Maintenance requires a running worker.
 
 Uploads are bounded by plan/global size. Document, question and chunk admission serialize their
 read/check/write transaction using PostgreSQL row locks or a SQLite write reservation. Question

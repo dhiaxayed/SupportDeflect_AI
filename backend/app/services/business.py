@@ -11,6 +11,7 @@ from sqlalchemy import case, func, select
 
 from app.core.datetime import as_utc
 from app.models import BillingEntry, ConversationLog, Document, IngestionJob, Organization, SupportCase
+from app.services.analytics import ai_answered, visitor_questions
 
 
 def business_dashboard(db, *, days=30, currency="EUR", channel="widget"):
@@ -18,30 +19,33 @@ def business_dashboard(db, *, days=30, currency="EUR", channel="widget"):
 
     Cash is receipts minus refunds in minor units; MRR uses current eligible
     subscription fees rather than cash received. Conversation resolution is an
-    AI-outcome metric, not a count of agent-closed cases. This cross-tenant read
+    answer metric, not a count of confirmed customer resolutions. This cross-tenant read
     requires platform authorization at the route and does not commit.
     """
     now = datetime.now(UTC)
     start, previous_start = now - timedelta(days=days), now - timedelta(days=2 * days)
-    channel_filter = [] if channel == "all" else [ConversationLog.channel == channel]
+    # Legacy channel selectors never turn administrator testing into customer activity.
+    channel_filter = [visitor_questions()]
+    if channel != "all":
+        channel_filter.append(ConversationLog.channel == channel)
     activity = db.execute(
         select(
             func.date(ConversationLog.created_at).label("day"),
             func.count().label("questions"),
-            func.sum(case((ConversationLog.resolved.is_(True), 1), else_=0)).label("resolved"),
+            func.sum(case((ai_answered(), 1), else_=0)).label("resolved"),
         )
-        .where(ConversationLog.created_at >= start, ConversationLog.created_at <= now, *channel_filter)
+        .where(ConversationLog.created_at >= start, ConversationLog.created_at < now, *channel_filter)
         .group_by(func.date(ConversationLog.created_at))
     ).all()
     cash_value = case((BillingEntry.kind == "payment", BillingEntry.amount_minor), else_=-BillingEntry.amount_minor)
     cash = db.execute(
         select(func.date(BillingEntry.occurred_at).label("day"), func.sum(cash_value).label("net"))
-        .where(BillingEntry.currency == currency, BillingEntry.occurred_at >= start, BillingEntry.occurred_at <= now)
+        .where(BillingEntry.currency == currency, BillingEntry.occurred_at >= start, BillingEntry.occurred_at < now)
         .group_by(func.date(BillingEntry.occurred_at))
     ).all()
     org_dates = db.execute(
         select(func.date(Organization.created_at).label("day"), func.count().label("total"))
-        .where(Organization.created_at >= start)
+        .where(Organization.created_at >= start, Organization.created_at < now)
         .group_by(func.date(Organization.created_at))
     ).all()
     activity_map = {str(row.day): row for row in activity}
@@ -69,7 +73,7 @@ def business_dashboard(db, *, days=30, currency="EUR", channel="widget"):
         """
         q, resolved = db.execute(
             select(
-                func.count(), func.coalesce(func.sum(case((ConversationLog.resolved.is_(True), 1), else_=0)), 0)
+                func.count(), func.coalesce(func.sum(case((ai_answered(), 1), else_=0)), 0)
             ).where(ConversationLog.created_at >= begin, ConversationLog.created_at < end, *channel_filter)
         ).one()
         revenue = db.scalar(
@@ -112,9 +116,9 @@ def business_dashboard(db, *, days=30, currency="EUR", channel="widget"):
             select(
                 ConversationLog.org_id,
                 func.count().label("questions"),
-                func.sum(case((ConversationLog.resolved.is_(True), 1), else_=0)).label("resolved"),
+                func.sum(case((ai_answered(), 1), else_=0)).label("resolved"),
             )
-            .where(ConversationLog.created_at >= start, *channel_filter)
+            .where(ConversationLog.created_at >= start, ConversationLog.created_at < now, *channel_filter)
             .group_by(ConversationLog.org_id)
         )
     }
@@ -178,6 +182,15 @@ def business_dashboard(db, *, days=30, currency="EUR", channel="widget"):
         start=start,
         end=now,
         metrics=metrics,
+        playground_interactions=db.scalar(select(func.count()).select_from(ConversationLog).where(
+            ConversationLog.channel == "admin", ConversationLog.created_at >= start,
+            ConversationLog.created_at < now,
+        )) or 0,
+        legacy_interactions=db.scalar(select(func.count()).select_from(ConversationLog).where(
+            ConversationLog.channel == "widget", ConversationLog.outcome.is_(None),
+            ConversationLog.created_at >= start, ConversationLog.created_at < now,
+        )) or 0,
+        estimated_deflection_rate=None,
         series=series,
         mrr_minor=mrr,
         arr_minor=mrr * 12,

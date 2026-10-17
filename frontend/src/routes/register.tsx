@@ -6,11 +6,12 @@
  */
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useState } from "react";
 import { toast } from "sonner";
-import { BrandLogo } from "@/components/brand-logo";
+import { AuthShell } from "@/components/marketing/auth-shell";
+import { publicFontLinks } from "@/components/marketing/public-font";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/register")({
   /**
    * Set the registration page title without duplicating the root shell's shared metadata.
    */
-  head: () => ({ meta: [{ title: "Sign up — SupportDeflect AI" }] }),
+  head: () => ({ meta: [{ title: "Sign up — SupportDeflect AI" }], links: [...publicFontLinks] }),
   component: Register,
 });
 
@@ -57,89 +58,69 @@ function Register() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-sm space-y-6">
-          <Link to="/" className="flex items-center gap-2">
-            <BrandLogo imageClassName="h-9 max-w-[190px]" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Create your workspace</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              14-day trial. No credit card required.
-            </p>
+    <AuthShell mode="register">
+      <span className="sd-auth-form-eyebrow sd-mono">A NEW HOME FOR YOUR KNOWLEDGE</span>
+      <h1>Create your workspace</h1>
+      <p className="sd-auth-description">14-day trial. No credit card required.</p>
+      <form onSubmit={onSubmit}>
+        <fieldset disabled={!hydrated || loading}>
+          <div className="sd-auth-field">
+            <Label htmlFor="company">Company name</Label>
+            <Input
+              id="company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Acme Inc."
+              autoComplete="organization"
+              required
+            />
           </div>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <fieldset disabled={!hydrated || loading} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="company">Company name</Label>
-                <Input
-                  id="company"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Acme Inc."
-                  autoComplete="organization"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Work email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pw">Password</Label>
-                <Input
-                  id="pw"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating…" : "Create workspace"}
-              </Button>
-            </fieldset>
-          </form>
-          <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="font-medium text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </div>
+          <div className="sd-auth-field">
+            <Label htmlFor="email">Work email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div className="sd-auth-field">
+            <Label htmlFor="pw">Password</Label>
+            <Input
+              id="pw"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              autoComplete="new-password"
+              required
+            />
+          </div>
+          <Button type="submit" className="sd-button sd-auth-submit" disabled={loading}>
+            {loading ? (
+              <>
+                Creating… <LoaderCircle size={17} className="sd-submit-spinner" />
+              </>
+            ) : (
+              <>
+                Create workspace <ArrowUpRight size={17} />
+              </>
+            )}
+          </Button>
+        </fieldset>
+      </form>
+      <p className="sd-auth-switch">
+        Already have an account?{" "}
+        <Link to="/login">
+          Sign in <ArrowUpRight size={13} />
+        </Link>
+      </p>
+      <div className="sd-auth-form-note">
+        <span className="sd-status-dot" /> One workspace. Your knowledge. A more helpful experience.
       </div>
-      <div
-        className="hidden lg:flex items-center p-12"
-        style={{ background: "var(--gradient-subtle)" }}
-      >
-        <div className="max-w-md space-y-5">
-          <h3 className="text-xl font-semibold tracking-tight">What you get instantly</h3>
-          <ul className="space-y-3 text-sm">
-            {[
-              "Embeddable AI widget for any site",
-              "RAG over your private documentation",
-              "Analytics on unresolved questions",
-              "Branding & widget customization",
-              "Human escalation built-in",
-            ].map((f) => (
-              <li key={f} className="flex items-start gap-2.5">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

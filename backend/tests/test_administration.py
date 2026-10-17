@@ -280,6 +280,7 @@ def test_business_time_windows_all_rows_and_channel_filter(client, platform):
                     question="Question",
                     answer="Answer",
                     resolved=i < 20,
+                    outcome="answered" if i < 20 else "escalated",
                     needs_human=i >= 20,
                     created_at=datetime.now(UTC) - timedelta(days=1),
                 )
@@ -290,6 +291,7 @@ def test_business_time_windows_all_rows_and_channel_filter(client, platform):
                     org_id=org_id,
                     channel="widget",
                     question="Old",
+                    outcome="escalated",
                     answer="Old",
                     created_at=datetime.now(UTC) - timedelta(days=40),
                 )
@@ -304,8 +306,9 @@ def test_business_time_windows_all_rows_and_channel_filter(client, platform):
     assert data["metrics"]["resolved"]["value"] == 20
     assert (
         client.get("/api/v1/platform/business?channel=all", headers=platform).json()["metrics"]["questions"]["value"]
-        == 36
+        == 35
     )
+    assert data["playground_interactions"] == 1
 
 
 def test_mail_audience_confirmation_deduplication_and_automations(client, platform, worker):

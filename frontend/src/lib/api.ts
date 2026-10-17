@@ -14,6 +14,22 @@ export const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "/api/v1").replace(
 
 const TOKEN_KEY = "supportdeflect_admin_token";
 const SESSION_EVENT = "supportdeflect:session-changed";
+let sessionRevision = 0;
+let authenticationAttempt = 0;
+
+// One listener per tab, independent of the number of React subscribers. The revision
+// also detects logout/login cycles that happen to restore the same token.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event: StorageEvent) => {
+    if (
+      (event.key === TOKEN_KEY || event.key === null) &&
+      (!event.storageArea || event.storageArea === window.localStorage)
+    ) {
+      sessionRevision++;
+      window.dispatchEvent(new window.Event(SESSION_EVENT));
+    }
+  });
+}
 
 /* ----------------------------- Token storage ----------------------------- */
 
@@ -33,6 +49,7 @@ export function getToken(): string | null {
 export function setToken(token: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
+  sessionRevision++;
   window.dispatchEvent(new window.Event(SESSION_EVENT));
 }
 
@@ -43,6 +60,7 @@ export function setToken(token: string): void {
 export function clearToken(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_KEY);
+  sessionRevision++;
   window.dispatchEvent(new window.Event(SESSION_EVENT));
 }
 
@@ -52,18 +70,9 @@ export function clearToken(): void {
  */
 export function subscribeSession(listener: () => void): () => void {
   if (typeof window === "undefined") return () => {};
-  /**
-   * Notify subscribers only when the authentication key or the entire storage area changes;
-   * unrelated site storage must not reset the workspace.
-   */
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === TOKEN_KEY || event.key === null) listener();
-  };
   window.addEventListener(SESSION_EVENT, listener);
-  window.addEventListener("storage", onStorage);
   return () => {
     window.removeEventListener(SESSION_EVENT, listener);
-    window.removeEventListener("storage", onStorage);
   };
 }
 
@@ -195,6 +204,7 @@ export interface AnalyticsQuestion {
   status: BackendChatResponse["status"];
   needs_human: boolean;
   channel: string;
+  outcome: "answered" | "escalated" | "clarification" | "provider_failure" | "greeting" | null;
   visitor_id: string | null;
   created_at: string;
 }
@@ -219,6 +229,16 @@ export interface AnalyticsSummary {
   resolved_questions: number;
   unresolved_questions: number;
   resolution_rate: number;
+  answered_questions: number;
+  answer_rate: number;
+  clarification_questions: number;
+  provider_failures: number;
+  escalated_questions: number;
+  human_resolved_cases: number;
+  greetings: number;
+  playground_interactions: number;
+  legacy_interactions: number;
+  estimated_deflection_rate: number | null;
   average_confidence: number;
   latest_questions: AnalyticsQuestion[];
   unanswered_questions: AnalyticsQuestion[];
@@ -264,14 +284,23 @@ export interface SubscriptionUsage {
 
 /* ----------------------------- Core request ------------------------------ */
 
+/** A superseded operation must not trigger session cleanup or account-specific UI updates. */
+export class SessionChangedError extends Error {
+  /** Use a stable user-facing message for callers that present transport failures. */
+  constructor() {
+    super("Session changed. Please retry.");
+    this.name = "SessionChangedError";
+  }
+}
+
 /**
  * Reject authenticated work that completed after its originating token changed, including
  * mutations that query-cache clearing cannot cancel.
  */
-function requireSameSession(token: string | null): void {
+function requireSameSession(token: string | null, revision: number): void {
   // Cache clearing cancels queries, but mutations can still finish after an account switch.
   // Reject their old data before a caller can put it into the new account's cache or download it.
-  if (token && getToken() !== token) throw new Error("Session changed. Please retry.");
+  if (getToken() !== token || revision !== sessionRevision) throw new SessionChangedError();
 }
 
 /**
@@ -279,17 +308,36 @@ function requireSameSession(token: string | null): void {
  * Clear only the matching expired session on 401, turn API validation/quota failures into
  * useful errors, and return the unread successful response for JSON or export consumers.
  */
-export async function apiResponse(path: string, options: RequestInit = {}): Promise<Response> {
+export async function apiResponse(
+  path: string,
+  options: RequestInit = {},
+  authenticated = true,
+): Promise<Response> {
   const headers = new Headers(options.headers || {});
   const token = getToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const revision = sessionRevision;
+  const attempt = authenticationAttempt;
+  if (authenticated && token) headers.set("Authorization", `Bearer ${token}`);
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } finally {
+    // A rejected fetch can be just as obsolete as a successful response.
+    requireSameSession(token, revision);
+  }
 
-  if (response.status === 401 && token && getToken() === token) {
+  const expiredSession =
+    response.status === 401 &&
+    authenticated &&
+    token &&
+    attempt === authenticationAttempt &&
+    getToken() === token &&
+    revision === sessionRevision;
+  if (expiredSession) {
     // A late failure from an old account must not invalidate a newly established session.
     clearToken();
   }
@@ -307,10 +355,11 @@ export async function apiResponse(path: string, options: RequestInit = {}): Prom
     } catch {
       message = response.statusText || message;
     }
+    if (!expiredSession) requireSameSession(token, revision);
     throw new Error(message);
   }
 
-  requireSameSession(token);
+  requireSameSession(token, revision);
   return response;
 }
 
@@ -318,13 +367,21 @@ export async function apiResponse(path: string, options: RequestInit = {}): Prom
  * Decode a successful JSON response under the same session before and after body reading;
  * represent 204 responses as undefined. Reject API or session failures for callers to handle.
  */
-export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+  authenticated = true,
+): Promise<T> {
   const token = getToken();
-  const response = await apiResponse(path, options);
+  const revision = sessionRevision;
+  const response = await apiResponse(path, options, authenticated);
+  requireSameSession(token, revision);
   if (response.status === 204) return undefined as T;
-  const data = (await response.json()) as T;
-  requireSameSession(token);
-  return data;
+  try {
+    return (await response.json()) as T;
+  } finally {
+    requireSameSession(token, revision);
+  }
 }
 
 /**
@@ -333,10 +390,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
  */
 export async function apiBlob(path: string, options: RequestInit = {}): Promise<Blob> {
   const token = getToken();
+  const revision = sessionRevision;
   const response = await apiResponse(path, options);
-  const data = await response.blob();
-  requireSameSession(token);
-  return data;
+  try {
+    return await response.blob();
+  } finally {
+    requireSameSession(token, revision);
+  }
 }
 
 /* -------------------------------- Auth ----------------------------------- */
@@ -346,12 +406,7 @@ export async function apiBlob(path: string, options: RequestInit = {}): Promise<
  * returning the user for role-based navigation.
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const data = await apiRequest<AuthResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  setToken(data.access_token);
-  return data;
+  return authenticate("/auth/login", { email, password });
 }
 
 /**
@@ -364,9 +419,22 @@ export async function register(payload: {
   password: string;
   admin_full_name?: string;
 }): Promise<AuthResponse> {
-  const data = await apiRequest<AuthResponse>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify(payload),
+  return authenticate("/auth/register", payload);
+}
+
+/** Establish only the latest initiated login/registration in the unchanged browser session. */
+async function authenticate(path: string, payload: object): Promise<AuthResponse> {
+  const attempt = ++authenticationAttempt;
+  const token = getToken();
+  const revision = sessionRevision;
+  const data = await apiRequest<AuthResponse>(
+    path,
+    { method: "POST", body: JSON.stringify(payload) },
+    false,
+  ).finally(() => {
+    // Superseded failures must not trigger cleanup of another authentication attempt.
+    if (attempt !== authenticationAttempt) throw new SessionChangedError();
+    requireSameSession(token, revision);
   });
   setToken(data.access_token);
   return data;

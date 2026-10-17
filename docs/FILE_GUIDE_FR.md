@@ -6,6 +6,24 @@ TypeScript/JavaScript décrivent les contrats, effets et limites près du code c
 Ils restent en anglais pour conserver une convention unique dans le dépôt ; les
 explications transversales et l’inventaire ci-dessous sont en français.
 
+## Présentation publique et validation associée
+
+| Fichier | Responsabilité |
+|---|---|
+| `frontend/playwright.public.config.ts` | Vérification autonome des pages publiques, sans compte ni API ; peut viser le serveur de production construit. |
+| `frontend/e2e/public-auth.spec.ts` | Inscription et connexion réelles sur une base jetable, erreurs de mot de passe et conservation des styles privés. |
+| `frontend/public/demo/widget/script.js` | Copie exacte du moteur de widget de production ; seule la passerelle de réponses locales transforme cette instance en démonstration. |
+| `frontend/scripts/sync-marketing-widget.mjs` | Copie le moteur officiel ou vérifie son égalité octet par octet, sans modifier le widget de production. |
+| `frontend/src/components/marketing/auth-shell.tsx` | Habillage public commun de connexion et inscription ; les formulaires conservent leurs effets d'authentification. |
+| `frontend/src/components/marketing/demo-data.ts` | Questions, réponses et sources synthétiques prédéfinies ; aucun document client ni appel IA. |
+| `frontend/src/components/marketing/knowledge-visual.tsx` | Composition HTML document, passage surligné et réponse ; aucun canvas ou téléchargement WebGL. |
+| `frontend/src/components/marketing/landing-experience.tsx` | Structure éditoriale de la landing, fonctionnalités vérifiées, exemples, limites et plans partagés. |
+| `frontend/src/components/marketing/marketing-nav.tsx` | Logo officiel, ancres, état des sections et menu mobile avec fermeture clavier/focus. |
+| `frontend/src/components/marketing/public-font.ts` | Préchargement de la police locale Instrument Sans limité aux routes publiques. |
+| `frontend/src/components/marketing/public-motion.tsx` | Frontière Motion et typographie publique ; respecte la préférence de réduction des mouvements. |
+| `frontend/src/components/marketing/use-landing-motion.ts` | Chorégraphie GSAP du hero et du parcours, ScrollTrigger sans blocage du défilement, nettoyage au démontage. |
+| `frontend/src/test/public-auth.test.tsx` | Régressions des vrais gestionnaires de formulaires : trois rôles, changement obligatoire, cache et erreurs. |
+
 ## Comprendre le parcours métier
 
 Un visiteur s’inscrit pour créer une organisation et son administrateur locataire.
@@ -44,6 +62,17 @@ Le mode par défaut capture les messages dans Mailpit ; « accepté SMTP » ne p
 pas une arrivée dans une boîte externe.
 
 ## Lire le code dans un ordre utile
+
+Ajouts de l'audit fonctionnel du 16 octobre 2026 :
+
+| Fichier | Rôle |
+|---|---|
+| `backend/app/core/source_urls.py` | Sépare les URL privées d'ingestion des métadonnées publiques ; retire identifiants, requêtes et fragments des URL HTTP dans les réponses et journaux. |
+| `backend/alembic/versions/0008_outcomes_rate_cleanup.py` | Ajoute le résultat explicite des interactions sans reclasser l'historique et l'index temporel du nettoyage de limitation de débit. |
+| `backend/tests/test_source_privacy.py` | Vérifie ingestion des URL complètes et confidentialité des documents, citations, anciens dossiers, erreurs de validation et journaux. |
+| `backend/tests/test_analytics_outcomes.py` | Vérifie les résultats RAG persistés et les mêmes définitions métier dans les indicateurs locataire et plateforme. |
+| `backend/tests/test_rate_limiter.py` | Vérifie bornes temporelles, admission concurrente avec connexions/processus distincts, nettoyage borné et propagation des pannes SQL. |
+| `backend/tests/__init__.py` | Donne une identité unique au paquet de tests ; évite une seconde initialisation de conftest et une URL de base héritée différente dans les sous-processus. |
 
 1. Lire README puis GUIDE_FONCTIONNEL_FR pour les usages et rôles.
 2. Ouvrir les routes React et leurs composants/hooks pour suivre les actions de l’écran.

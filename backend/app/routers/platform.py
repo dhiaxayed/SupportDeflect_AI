@@ -9,6 +9,7 @@ from sqlalchemy import case, desc, func, select, text
 from sqlalchemy.orm import Session
 
 from app.admin_schemas import ArchiveRequest, OrganizationCreate, OrganizationEdit, PeriodAdjustment
+from app.core.source_urls import redact_source_urls
 from app.db import get_db
 from app.deps import require_super_admin
 from app.models import AuditEvent, ConversationLog, Document, IngestionJob, Organization, SupportCase, User, VectorChunk
@@ -21,6 +22,7 @@ from app.schemas import (
     PlatformOverviewOut,
 )
 from app.services import organizations as organization_service
+from app.services.analytics import visitor_questions
 from app.services.audit import record_audit_event
 from app.services.ingestion import lock_document_for_write
 from app.services.llm import check_llm_health
@@ -57,7 +59,7 @@ def overview(db: Session = Depends(get_db)):
         users_total=count(db, User),
         documents_total=count(db, Document, Document.is_active.is_(True)),
         vector_chunks_total=count(db, VectorChunk),
-        questions_30d=count(db, ConversationLog, recent()),
+        questions_30d=count(db, ConversationLog, recent(), visitor_questions()),
         open_support_cases=count(db, SupportCase, SupportCase.status.in_(["open", "in_review"])),
         pending_ingestion_jobs=count(db, IngestionJob, IngestionJob.status == "pending"),
         processing_ingestion_jobs=count(db, IngestionJob, IngestionJob.status == "processing"),
@@ -89,7 +91,9 @@ def org_summary(db, org, counts=None):
                 users_count=count(db, User, User.org_id == org.id),
                 documents_count=count(db, Document, Document.org_id == org.id, Document.is_active.is_(True)),
                 chunks_count=count(db, VectorChunk, VectorChunk.org_id == org.id),
-                questions_30d=count(db, ConversationLog, ConversationLog.org_id == org.id, recent()),
+                questions_30d=count(
+                    db, ConversationLog, ConversationLog.org_id == org.id, recent(), visitor_questions()
+                ),
                 support_cases_count=count(db, SupportCase, SupportCase.org_id == org.id),
             )
         ),
@@ -139,7 +143,7 @@ def organizations(
         ("users_count", User, ()),
         ("documents_count", Document, (Document.is_active.is_(True),)),
         ("chunks_count", VectorChunk, ()),
-        ("questions_30d", ConversationLog, (recent(),)),
+        ("questions_30d", ConversationLog, (recent(), visitor_questions())),
         ("support_cases_count", SupportCase, ()),
     ):
         totals = (
@@ -294,7 +298,10 @@ def failed_ingestion(db: Session = Depends(get_db)):
         .limit(50)
     )
     return [
-        dict(id=job.id, organization_name=name, document_title=title, attempts=job.attempts, created_at=job.created_at)
+        dict(
+            id=job.id, organization_name=name, document_title=redact_source_urls(title),
+            attempts=job.attempts, created_at=job.created_at,
+        )
         for job, name, title in rows
     ]
 

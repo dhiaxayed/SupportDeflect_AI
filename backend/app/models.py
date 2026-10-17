@@ -191,6 +191,8 @@ class ConversationLog(Base):
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     confidence_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # NULL means legacy/unknown: booleans alone cannot distinguish greetings or outages.
+    outcome: Mapped[str | None] = mapped_column(String(32), nullable=True)
     needs_human: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sources: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     latency_ms: Mapped[int] = mapped_column(default=0, nullable=False)
@@ -284,7 +286,10 @@ class RateLimitEvent(Base):
     """
 
     __tablename__ = "rate_limit_events"
-    __table_args__ = (Index("ix_rate_limit_key_created", "key", "created_at"),)
+    __table_args__ = (
+        Index("ix_rate_limit_key_created", "key", "created_at"),
+        Index("ix_rate_limit_created", "created_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

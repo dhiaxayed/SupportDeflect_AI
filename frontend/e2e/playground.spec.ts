@@ -66,7 +66,7 @@ test("Playground routes greetings to AI and unsupported questions to knowledge f
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await question.fill("c est qui alex martin");
   await question.press("Enter");
-  await expect(page.getByText("Resolved", { exact: true })).toBeVisible();
+  await expect(page.getByText("Answered", { exact: true })).toBeVisible();
   await expect(page.getByText("Sources", { exact: true })).toBeVisible();
   await question.fill("quelles sont ses competences techniques ?");
   const followUp = page.waitForResponse(
@@ -78,7 +78,7 @@ test("Playground routes greetings to AI and unsupported questions to knowledge f
     "c est qui alex martin",
   );
   expect((await followUpResponse.json()).status).toBe("resolved");
-  await expect(page.getByText("Resolved", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("Answered", { exact: true })).toHaveCount(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({
     path: testInfo.outputPath("profile-follow-up-mobile.png"),

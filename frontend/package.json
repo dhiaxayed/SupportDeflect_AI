@@ -12,10 +12,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:public": "playwright test --config playwright.public.config.ts",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fontsource-variable/instrument-sans": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
+    "@gsap/react": "^2.1.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -24,11 +27,13 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.83.0",
-    "@tanstack/react-router": "^1.168.25",
-    "@tanstack/react-start": "^1.167.50",
+    "@tanstack/react-router": "^1.170.45",
+    "@tanstack/react-start": "^1.169.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.575.0",
+    "motion": "^14.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^2.15.4",
@@ -36,6 +41,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.2.1",

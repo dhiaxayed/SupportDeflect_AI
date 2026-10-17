@@ -5,13 +5,16 @@ expose liveness/schema readiness endpoints.
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.source_urls import redact_source_urls
 from app.db import SessionLocal, init_db, required_schema_revision
 from app.routers import analytics, auth, billing, chat, documents, mail, platform, support_cases, team, widget
 from app.routers import settings as settings_router
@@ -44,6 +47,15 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.docs_enabled else None,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """Retain actionable field errors without echoing private URL/password inputs or validator context."""
+    return JSONResponse(status_code=422, content={"detail": [
+        {"loc": list(error["loc"]), "type": error["type"], "msg": redact_source_urls(error["msg"])}
+        for error in exc.errors()
+    ]})
 
 app.add_middleware(
     CORSMiddleware,

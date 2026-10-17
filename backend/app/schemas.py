@@ -22,6 +22,7 @@ from pydantic import (
 )
 
 from app.core.datetime import as_utc
+from app.core.source_urls import redact_source_urls
 from app.widget_design import WidgetDesign
 
 
@@ -36,6 +37,7 @@ def validate_password_bytes(value: str) -> str:
 
 Password = Annotated[str, AfterValidator(validate_password_bytes)]
 ReadableText = Annotated[str, StringConstraints(strip_whitespace=True)]
+PublicSourceText = Annotated[str, AfterValidator(redact_source_urls)]
 
 
 class OrganizationOut(BaseModel):
@@ -154,13 +156,13 @@ class DocumentOut(BaseModel):
     """
 
     id: str
-    title: str
+    title: PublicSourceText
     source_type: str
-    source: str
+    source: PublicSourceText
     mime_type: str | None = None
     status: str
     chunk_count: int
-    error_message: str | None = None
+    error_message: PublicSourceText | None = None
     is_active: bool
     created_at: datetime
     indexed_at: datetime | None = None
@@ -183,11 +185,11 @@ class SourceOut(BaseModel):
     """
 
     document_id: str
-    title: str
-    source: str
+    title: PublicSourceText
+    source: PublicSourceText
     chunk_index: int
     score: float
-    snippet: str
+    snippet: PublicSourceText
     reference: int | None = None
 
 
@@ -235,7 +237,7 @@ class ChatResponse(BaseModel):
     escalation may carry a scoped case capability, which must remain private.
     """
 
-    answer: str
+    answer: PublicSourceText
     sources: list[SourceOut]
     confidence_score: float
     status: Literal["resolved", "needs_human", "clarification_needed"]
@@ -327,11 +329,12 @@ class AnalyticsQuestion(BaseModel):
 
     id: str
     question: str
-    answer: str
+    answer: PublicSourceText
     confidence_score: float
     status: Literal["resolved", "needs_human", "clarification_needed"]
     needs_human: bool
     channel: str
+    outcome: str | None = None
     visitor_id: str | None = None
     created_at: datetime
 
@@ -342,7 +345,7 @@ class DocumentUsage(BaseModel):
     """
 
     document_id: str
-    title: str
+    title: PublicSourceText
     count: int
 
 
@@ -357,6 +360,17 @@ class AnalyticsSummary(BaseModel):
     resolved_questions: int
     unresolved_questions: int
     resolution_rate: float
+    answered_questions: int = 0
+    answer_rate: float = 0.0
+    clarification_questions: int = 0
+    provider_failures: int = 0
+    escalated_questions: int = 0
+    human_resolved_cases: int = 0
+    greetings: int = 0
+    playground_interactions: int = 0
+    legacy_interactions: int = 0
+    # No visitor-confirmed resolution/deflection feedback is collected.
+    estimated_deflection_rate: float | None = None
     average_confidence: float
     latest_questions: list[AnalyticsQuestion]
     unanswered_questions: list[AnalyticsQuestion]
@@ -452,9 +466,18 @@ class SupportCaseOut(BaseModel):
     visitor_id: str | None = None
     channel: str
     question: str
-    ai_answer: str
+    ai_answer: PublicSourceText
     confidence_score: float
     sources: list[dict]
+
+    @field_validator("sources")
+    @classmethod
+    def safe_legacy_sources(cls, sources: list[dict]) -> list[dict]:
+        """Sanitize old partial citation snapshots without requiring new metadata fields."""
+        return [
+            {key: redact_source_urls(value) if isinstance(value, str) else value for key, value in source.items()}
+            for source in sources
+        ]
 
 
 class SupportCaseAssignRequest(BaseModel):

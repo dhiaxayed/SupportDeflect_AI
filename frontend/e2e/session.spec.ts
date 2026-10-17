@@ -62,3 +62,53 @@ test("a temporary account API failure is recoverable without discarding the sess
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
 });
+
+test("switching accounts in another tab replaces cached private documents", async ({
+  page,
+  context,
+  request,
+}) => {
+  const api = process.env.E2E_API_URL!;
+  const password = process.env.E2E_ADMIN_PASSWORD!;
+  for (const account of ["first", "second"]) {
+    const response = await request.post(`${api}/auth/register`, {
+      data: {
+        organization_name: `${account} workspace`,
+        admin_email: `${account}-switch@example.com`,
+        password,
+      },
+    });
+    expect(response.status()).toBe(201);
+    const headers = { Authorization: `Bearer ${(await response.json()).access_token}` };
+    const uploaded = await request.post(`${api}/documents/upload`, {
+      headers,
+      multipart: {
+        file: {
+          name: `${account}-private-guide.txt`,
+          mimeType: "text/plain",
+          buffer: Buffer.from(
+            `Private policy for the ${account} account. Shipping delivery takes three working days.`,
+          ),
+        },
+      },
+    });
+    expect(uploaded.status()).toBe(201);
+  }
+  await page.goto("/login");
+  await page.getByLabel("Email", { exact: true }).fill("first-switch@example.com");
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/dashboard/documents");
+  await expect(page.getByRole("row").filter({ hasText: "first-private-guide.txt" })).toBeVisible();
+
+  const other = await context.newPage();
+  await other.goto("/login");
+  await other.getByLabel("Email", { exact: true }).fill("second-switch@example.com");
+  await other.getByLabel("Password", { exact: true }).fill(password);
+  await other.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(other).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("row").filter({ hasText: "second-private-guide.txt" })).toBeVisible();
+  await expect(page.getByText("first-private-guide.txt", { exact: true })).toHaveCount(0);
+  await other.close();
+});

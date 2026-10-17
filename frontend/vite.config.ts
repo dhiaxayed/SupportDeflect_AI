@@ -13,6 +13,8 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     cors: false,
+    // Prepare the client route graph alongside SSR so cold sign-in can hydrate promptly.
+    warmup: { clientFiles: ["./src/router.tsx", "./src/routes/login.tsx"] },
     proxy: {
       "/api": { target: process.env.DEV_API_URL ?? "http://127.0.0.1:8000", changeOrigin: true },
     },

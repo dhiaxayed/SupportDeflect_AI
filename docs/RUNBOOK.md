@@ -3,6 +3,28 @@
 All commands start at the repository root unless stated otherwise.
 Compose project name is supportdeflect. Never operate on an unidentified deployment.
 
+## Native Windows development
+
+Run `demarrer-supportdeflect.bat` from the repository root. The launcher checks Node 24+,
+Mailpit, the Python environment and installed dependencies, applies Alembic migrations,
+reindexes stale vectors, then supervises the API, ingestion worker, frontend, SMTP capture
+and mailer. Use `demarrer-supportdeflect.bat --offline-embeddings` when MiniLM is already
+cached locally. The local configuration comes from `backend/.env`; keep a consistent
+SQLite backup before upgrading an existing database.
+
+Application: <http://localhost:5173>. API readiness: <http://127.0.0.1:8000/healthz/db>.
+Captured mail: <http://127.0.0.1:8025>. Native logs are in `logs/native-*.log`.
+SQLite persists both application data and 384-dimensional vectors; authenticated platform
+health labels its JSON vector fallback as degraded because it does not provide PostgreSQL
+pgvector. Groq remains the real external inference provider; local mail is captured only.
+
+The 17 October 2026 local acceptance run retained the existing database, saved a verified
+pre-upgrade backup in `data/backups`, and migrated from 0006 to 0008. Its separate synthetic
+tenant and platform administrator have credentials in the ignored `data/local-access.json`.
+The ignored `logs/native-stack-state.json` records this run's supervisor/service process IDs,
+database and backup paths; `logs/native-verification.json` records the 21 passed checks.
+These generated private files are specific to that run and are not distributed with Git.
+
 ## Routine Health
 
 ```bash
@@ -14,7 +36,7 @@ docker compose exec backend python scripts/create_super_admin.py
 ```
 
 Internal /healthz is liveness; /healthz/db requires DB connectivity and the current migration
-head (0007). Local embeddings are warmed before the API accepts connections.
+head (0008). Local embeddings are warmed before the API accepts connections.
 Authenticated /api/v1/platform/health reports dependency health. Missing Groq is not hidden
 by a successful API liveness response. Worker heartbeats and actual queue progress are separate
 signals. The mailbox is /mail/; mail delivery is local capture, not external delivery.
@@ -47,7 +69,8 @@ alembic downgrade. Some historical migrations deliberately refuse destructive do
 0001 freezes the initial schema; 0002 introduces platform identities, roles, cases and audit;
 0003 adds PostgreSQL pgvector(384)/HNSW; 0004 adds administration, billing, mailing and token
 revocation; 0005 persists the complete widget design; 0006 records vector model identity;
-0007 reserves in-flight question quota without holding a database lock across generation.
+0007 reserves in-flight question quota without holding a database lock across generation;
+0008 records explicit conversation outcomes and indexes periodic rate-limit cleanup.
 For pre-Alembic databases, back up and compare the entire baseline schema before any stamp.
 Never stamp an unknown database just to suppress an error.
 

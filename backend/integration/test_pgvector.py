@@ -33,6 +33,7 @@ def test_migrate_vectors_cosine_and_tenant_filtering(monkeypatch):
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     command.upgrade(config, "head")
     ids = []
+    rate_key = None
     try:
         with SessionLocal() as db:
             assert db.scalar(text("SELECT extname FROM pg_extension WHERE extname='vector'")) == "vector"
@@ -109,8 +110,31 @@ def test_migrate_vectors_cosine_and_tenant_filtering(monkeypatch):
             claims = list(pool.map(claim, ["integration-worker-a", "integration-worker-b"]))
         assert all(job is not None for job in claims)
         assert len({job.id for job in claims}) == 2
+        from app.services.rate_limiter import DatabaseRateLimiter
+
+        rate_key = "integration:" + ids[0][0]
+        ready = Barrier(8)
+
+        def admit(index):
+            """Race distinct real PostgreSQL connections under the shared advisory-key lock."""
+            ready.wait(timeout=10)
+            return DatabaseRateLimiter().allow(rate_key, limit=3)
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            assert sum(pool.map(admit, range(8))) == 3
+        ready = Barrier(8)
+
+        def admit_independent(index):
+            """Independent PostgreSQL throttle keys retain their own capacity."""
+            ready.wait(timeout=10)
+            return DatabaseRateLimiter().allow(f"{rate_key}:{index}", limit=1)
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            assert all(pool.map(admit_independent, range(8)))
     finally:
         with SessionLocal() as db:
+            if rate_key:
+                db.execute(text("DELETE FROM rate_limit_events WHERE key LIKE :key"), {"key": rate_key + "%"})
             for org_id, _ in ids:
                 db.execute(text("DELETE FROM organizations WHERE id=:id"), {"id": org_id})
             db.commit()

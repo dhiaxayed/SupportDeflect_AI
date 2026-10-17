@@ -74,7 +74,7 @@ function Overview() {
     );
 
   const totalConversations = analytics?.total_questions ?? 0;
-  const deflectionRate = Math.round((analytics?.resolution_rate ?? 0) * 100);
+  const answerRate = Math.round((analytics?.answer_rate ?? 0) * 100);
   const indexedDocuments = (documents ?? []).filter((d) => d.status === "indexed").length;
   const avgRetrievalScore = (analytics?.average_confidence ?? 0).toFixed(2);
   const unresolved = analytics?.unresolved_questions ?? 0;
@@ -93,16 +93,16 @@ function Overview() {
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <MetricCard
-            title="Conversations"
+            title="Visitor questions"
             value={totalConversations.toLocaleString()}
             icon={MessageSquare}
             description="all time"
           />
           <MetricCard
-            title="AI resolution rate"
-            value={`${deflectionRate}%`}
+            title="AI answer rate"
+            value={`${answerRate}%`}
             icon={TrendingUp}
-            description="resolved"
+            description="resolution unconfirmed"
           />
           <MetricCard
             title="Indexed docs"
@@ -114,15 +114,22 @@ function Overview() {
             title="Avg retrieval score"
             value={avgRetrievalScore}
             icon={Gauge}
-            description="all answers"
+            description="AI-only answers"
           />
           <MetricCard
-            title="Unresolved"
+            title="Escalated questions"
             value={String(unresolved)}
             icon={AlertCircle}
-            description="needs review"
+            description="ever escalated"
           />
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Visitor questions only; greetings and Playground tests are excluded. The AI answer rate
+          counts documented answers without human escalation. AI answers do not confirm issue
+          resolution. {analytics?.legacy_interactions ?? 0} historical interactions have no recorded
+          outcome and are excluded.
+        </p>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <Card className="xl:col-span-2">
@@ -231,7 +238,7 @@ function Overview() {
               <div>
                 <CardTitle>Recent questions</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Latest questions across widget and playground
+                  Latest visitor questions from the widget
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
@@ -241,7 +248,7 @@ function Overview() {
             <CardContent className="space-y-1">
               {recentQuestions.length === 0 && (
                 <p className="px-2 py-6 text-sm text-muted-foreground">
-                  No conversations yet. Try the assistant in the Playground.
+                  No visitor questions yet. Install the widget to receive questions.
                 </p>
               )}
               {recentQuestions.slice(0, 6).map((q) => (
@@ -261,10 +268,12 @@ function Overview() {
                   <StatusBadge
                     status={
                       q.status === "resolved"
-                        ? "Resolved"
+                        ? "Answered"
                         : q.status === "clarification_needed"
                           ? "Clarification"
-                          : "Unresolved"
+                          : q.outcome === "provider_failure"
+                            ? "Service unavailable"
+                            : "Escalated"
                     }
                   />
                 </div>

@@ -17,6 +17,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.source_urls import redact_source_urls
 from app.models import ConversationLog, Organization, QuestionReservation, SupportCase
 from app.schemas import ChatResponse, ChatTurn, SourceOut
 from app.services.embeddings import get_embedding_service
@@ -323,6 +324,13 @@ class RAGService:
         scoped polling capability before committing all rows together; failures propagate.
         """
         latency_ms = int((time.perf_counter() - started) * 1000)
+        outcome = (
+            "greeting" if is_social_message(question)
+            else "provider_failure" if response.reason in {"llm_unavailable", "retrieval_unavailable"}
+            else "escalated" if response.needs_human
+            else "clarification" if response.status == "clarification_needed"
+            else "answered"
+        )
         log = ConversationLog(
             org_id=org.id,
             visitor_id=visitor_id,
@@ -331,6 +339,7 @@ class RAGService:
             answer=response.answer,
             confidence_score=response.confidence_score,
             resolved=response.status == "resolved",
+            outcome=outcome,
             needs_human=response.needs_human,
             sources=[source.model_dump() for source in response.sources],
             latency_ms=latency_ms,
@@ -379,7 +388,7 @@ def build_user_prompt(
             "documents": [
                 {
                     "reference": index,
-                    "title": chunk.metadata.get("title", "Untitled"),
+                    "title": redact_source_urls(str(chunk.metadata.get("title", "Untitled"))),
                     "passages": [
                         {"id": number, "text": text}
                         for number, text in enumerate(evidence_passages(chunk.text), start=1)
@@ -495,7 +504,7 @@ def chunk_to_source(chunk: RetrievedChunk, *, reference: int | None = None, snip
     """Map retrieved metadata and an optional verified excerpt to the public citation schema.
 
     Fallback metadata/snippets support older rows; numeric chunk indices must be
-    convertible. Source URLs are retained, including query strings. This pure mapping
+    convertible. SourceOut sanitizes even legacy source URLs at the public boundary. This mapping
     does not reauthorize ownership, which retrieval must already enforce.
     """
     metadata = chunk.metadata

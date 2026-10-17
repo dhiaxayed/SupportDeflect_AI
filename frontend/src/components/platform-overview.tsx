@@ -74,11 +74,7 @@ const formatDay = (value: string) =>
 export function ActivityChart({ data }: { data: BusinessDashboard }) {
   return (
     <>
-      <div
-        className="admin-chart"
-        role="img"
-        aria-label="Daily questions and automatic resolutions"
-      >
+      <div className="admin-chart" role="img" aria-label="Daily visitor questions and AI answers">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data.series}
@@ -105,7 +101,7 @@ export function ActivityChart({ data }: { data: BusinessDashboard }) {
             />
             <Bar
               dataKey="resolved"
-              name="AI resolved"
+              name="AI answered"
               fill="var(--chart-3)"
               maxBarSize={18}
               isAnimationActive={false}
@@ -120,7 +116,7 @@ export function ActivityChart({ data }: { data: BusinessDashboard }) {
         </span>
         <span>
           <i style={{ background: "var(--chart-3)" }} />
-          AI resolved
+          AI answered
         </span>
       </div>
     </>
@@ -187,7 +183,7 @@ export function RevenueChart({ data }: { data: BusinessDashboard }) {
 export function PlatformOverview({ usage = false }: { usage?: boolean }) {
   const [days, setDays] = useState(30);
   const [currency, setCurrency] = useState<Currency>("EUR");
-  const [channel, setChannel] = useState("widget");
+  const channel = "widget";
   const query = useQuery({
     queryKey: ["platform", "business", days, currency, channel],
     /**
@@ -214,17 +210,6 @@ export function PlatformOverview({ usage = false }: { usage?: boolean }) {
       </AdminHeader>
       <div className="admin-toolbar">
         <PeriodControls days={days} setDays={setDays} currency={currency} setCurrency={setCurrency}>
-          {usage && (
-            <select
-              aria-label="Conversation channel"
-              value={channel}
-              onChange={(e) => setChannel(e.target.value)}
-            >
-              <option value="widget">Customer widget</option>
-              <option value="admin">Playground</option>
-              <option value="all">All channels</option>
-            </select>
-          )}
           <button
             className="admin-icon-button"
             title="Refresh dashboard"
@@ -294,11 +279,17 @@ export function PlatformOverview({ usage = false }: { usage?: boolean }) {
               }
             />
             <Metric
-              label="AI resolution rate"
+              label="AI answer rate"
               value={data.metrics.resolution_rate.value.toFixed(1) + "%"}
               metric={data.metrics.resolution_rate}
+              detail="Documented answers without escalation; customer resolution is not confirmed"
             />
           </div>
+          <p className="text-sm text-muted-foreground">
+            Visitor questions only; greetings are excluded. {data.playground_interactions ?? 0}{" "}
+            Playground interactions and {data.legacy_interactions ?? 0} historical interactions
+            without a recorded outcome are reported separately from customer-support metrics.
+          </p>
           {!usage && data.unpriced_organizations > 0 && (
             <div className="admin-note">
               <Info size={16} />
@@ -384,7 +375,7 @@ export function PlatformOverview({ usage = false }: { usage?: boolean }) {
                   <p>
                     {usage
                       ? "Accounts created during the selected period"
-                      : "Customer widget conversations and automatic resolutions"}
+                      : "Customer widget conversations and AI answers"}
                   </p>
                 </div>
                 <Link to={usage ? "/platform/organizations" : "/platform/usage"}>
@@ -476,7 +467,7 @@ export function PlatformOverview({ usage = false }: { usage?: boolean }) {
                     <th>Organization</th>
                     <th>Plan</th>
                     <th className="numeric">Questions</th>
-                    <th>AI resolution</th>
+                    <th>AI answer rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -517,7 +508,7 @@ export function PlatformOverview({ usage = false }: { usage?: boolean }) {
                     <th>Date (UTC)</th>
                     <th>Net receipts ({currency})</th>
                     <th>Questions</th>
-                    <th>AI resolved</th>
+                    <th>AI answered</th>
                     <th>New organizations</th>
                   </tr>
                 </thead>

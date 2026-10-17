@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.datetime import as_utc
+from app.core.source_urls import redact_source_urls
 from app.models import Document, IngestionJob, Organization
 from app.services.embeddings import get_embedding_service
 from app.services.subscriptions import ensure_subscription_active, get_plan, lock_organization_for_write
@@ -189,8 +190,8 @@ class IngestionService:
             get_vector_store().upsert_chunks(
                 org_id=org.id,
                 document_id=document.id,
-                title=document.title,
-                source=document.source,
+                title=redact_source_urls(document.title),
+                source=redact_source_urls(document.source),
                 chunks=chunks,
                 embeddings=embeddings,
                 db=db,

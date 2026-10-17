@@ -9,51 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as PlatformRouteImport } from './routes/platform'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PlatformIndexRouteImport } from './routes/platform.index'
+import { Route as ChangePasswordRouteImport } from './routes/change-password'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlatformRouteImport } from './routes/platform'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
-import { Route as PlatformUsageRouteImport } from './routes/platform.usage'
-import { Route as PlatformSubscriptionsRouteImport } from './routes/platform.subscriptions'
-import { Route as PlatformHealthRouteImport } from './routes/platform.health'
-import { Route as PlatformCommunicationsRouteImport } from './routes/platform.communications'
-import { Route as PlatformBillingRouteImport } from './routes/platform.billing'
-import { Route as PlatformAuditRouteImport } from './routes/platform.audit'
-import { Route as DashboardWidgetRouteImport } from './routes/dashboard.widget'
-import { Route as DashboardUploadRouteImport } from './routes/dashboard.upload'
-import { Route as DashboardTeamRouteImport } from './routes/dashboard.team'
-import { Route as DashboardSourcesRouteImport } from './routes/dashboard.sources'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
-import { Route as DashboardPlaygroundRouteImport } from './routes/dashboard.playground'
-import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
-import { Route as DashboardDocumentsRouteImport } from './routes/dashboard.documents'
-import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard.analytics'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as DashboardDocumentsRouteImport } from './routes/dashboard.documents'
+import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
+import { Route as DashboardPlaygroundRouteImport } from './routes/dashboard.playground'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardSourcesRouteImport } from './routes/dashboard.sources'
+import { Route as DashboardTeamRouteImport } from './routes/dashboard.team'
+import { Route as DashboardUploadRouteImport } from './routes/dashboard.upload'
+import { Route as DashboardWidgetRouteImport } from './routes/dashboard.widget'
+import { Route as PlatformIndexRouteImport } from './routes/platform.index'
+import { Route as PlatformAuditRouteImport } from './routes/platform.audit'
+import { Route as PlatformBillingRouteImport } from './routes/platform.billing'
+import { Route as PlatformCommunicationsRouteImport } from './routes/platform.communications'
+import { Route as PlatformHealthRouteImport } from './routes/platform.health'
+import { Route as PlatformSubscriptionsRouteImport } from './routes/platform.subscriptions'
+import { Route as PlatformUsageRouteImport } from './routes/platform.usage'
 import { Route as PlatformOrganizationsIndexRouteImport } from './routes/platform.organizations.index'
 import { Route as PlatformOrganizationsIdRouteImport } from './routes/platform.organizations.$id'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlatformRoute = PlatformRouteImport.update({
-  id: '/platform',
-  path: '/platform',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChangePasswordRoute = ChangePasswordRouteImport.update({
@@ -61,89 +46,34 @@ const ChangePasswordRoute = ChangePasswordRouteImport.update({
   path: '/change-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlatformIndexRoute = PlatformIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PlatformRoute,
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
-const PlatformUsageRoute = PlatformUsageRouteImport.update({
-  id: '/usage',
-  path: '/usage',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const PlatformSubscriptionsRoute = PlatformSubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const PlatformHealthRoute = PlatformHealthRouteImport.update({
-  id: '/health',
-  path: '/health',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const PlatformCommunicationsRoute = PlatformCommunicationsRouteImport.update({
-  id: '/communications',
-  path: '/communications',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const PlatformBillingRoute = PlatformBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const PlatformAuditRoute = PlatformAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => PlatformRoute,
-} as any)
-const DashboardWidgetRoute = DashboardWidgetRouteImport.update({
-  id: '/widget',
-  path: '/widget',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardUploadRoute = DashboardUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardTeamRoute = DashboardTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSourcesRoute = DashboardSourcesRouteImport.update({
-  id: '/sources',
-  path: '/sources',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardPlaygroundRoute = DashboardPlaygroundRouteImport.update({
-  id: '/playground',
-  path: '/playground',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardInboxRoute = DashboardInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardDocumentsRoute = DashboardDocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
+const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
@@ -151,10 +81,80 @@ const DashboardBillingRoute = DashboardBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const DashboardDocumentsRoute = DashboardDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
   getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInboxRoute = DashboardInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPlaygroundRoute = DashboardPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSourcesRoute = DashboardSourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardTeamRoute = DashboardTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardUploadRoute = DashboardUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardWidgetRoute = DashboardWidgetRouteImport.update({
+  id: '/widget',
+  path: '/widget',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const PlatformIndexRoute = PlatformIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformAuditRoute = PlatformAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformBillingRoute = PlatformBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformCommunicationsRoute = PlatformCommunicationsRouteImport.update({
+  id: '/communications',
+  path: '/communications',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformHealthRoute = PlatformHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformSubscriptionsRoute = PlatformSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformUsageRoute = PlatformUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => PlatformRoute,
 } as any)
 const PlatformOrganizationsIndexRoute =
   PlatformOrganizationsIndexRouteImport.update({
@@ -347,32 +347,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/platform': {
-      id: '/platform'
-      path: '/platform'
-      fullPath: '/platform'
-      preLoaderRoute: typeof PlatformRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/change-password': {
@@ -382,19 +361,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChangePasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/platform/': {
-      id: '/platform/'
-      path: '/'
-      fullPath: '/platform/'
-      preLoaderRoute: typeof PlatformIndexRouteImport
-      parentRoute: typeof PlatformRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -403,102 +396,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/platform/usage': {
-      id: '/platform/usage'
-      path: '/usage'
-      fullPath: '/platform/usage'
-      preLoaderRoute: typeof PlatformUsageRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/platform/subscriptions': {
-      id: '/platform/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/platform/subscriptions'
-      preLoaderRoute: typeof PlatformSubscriptionsRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/platform/health': {
-      id: '/platform/health'
-      path: '/health'
-      fullPath: '/platform/health'
-      preLoaderRoute: typeof PlatformHealthRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/platform/communications': {
-      id: '/platform/communications'
-      path: '/communications'
-      fullPath: '/platform/communications'
-      preLoaderRoute: typeof PlatformCommunicationsRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/platform/billing': {
-      id: '/platform/billing'
-      path: '/billing'
-      fullPath: '/platform/billing'
-      preLoaderRoute: typeof PlatformBillingRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/platform/audit': {
-      id: '/platform/audit'
-      path: '/audit'
-      fullPath: '/platform/audit'
-      preLoaderRoute: typeof PlatformAuditRouteImport
-      parentRoute: typeof PlatformRoute
-    }
-    '/dashboard/widget': {
-      id: '/dashboard/widget'
-      path: '/widget'
-      fullPath: '/dashboard/widget'
-      preLoaderRoute: typeof DashboardWidgetRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/upload': {
-      id: '/dashboard/upload'
-      path: '/upload'
-      fullPath: '/dashboard/upload'
-      preLoaderRoute: typeof DashboardUploadRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/team': {
-      id: '/dashboard/team'
-      path: '/team'
-      fullPath: '/dashboard/team'
-      preLoaderRoute: typeof DashboardTeamRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/sources': {
-      id: '/dashboard/sources'
-      path: '/sources'
-      fullPath: '/dashboard/sources'
-      preLoaderRoute: typeof DashboardSourcesRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/playground': {
-      id: '/dashboard/playground'
-      path: '/playground'
-      fullPath: '/dashboard/playground'
-      preLoaderRoute: typeof DashboardPlaygroundRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/inbox': {
-      id: '/dashboard/inbox'
-      path: '/inbox'
-      fullPath: '/dashboard/inbox'
-      preLoaderRoute: typeof DashboardInboxRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/documents': {
-      id: '/dashboard/documents'
-      path: '/documents'
-      fullPath: '/dashboard/documents'
-      preLoaderRoute: typeof DashboardDocumentsRouteImport
+    '/dashboard/analytics': {
+      id: '/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/billing': {
@@ -508,12 +410,110 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/analytics': {
-      id: '/dashboard/analytics'
-      path: '/analytics'
-      fullPath: '/dashboard/analytics'
-      preLoaderRoute: typeof DashboardAnalyticsRouteImport
+    '/dashboard/documents': {
+      id: '/dashboard/documents'
+      path: '/documents'
+      fullPath: '/dashboard/documents'
+      preLoaderRoute: typeof DashboardDocumentsRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/inbox': {
+      id: '/dashboard/inbox'
+      path: '/inbox'
+      fullPath: '/dashboard/inbox'
+      preLoaderRoute: typeof DashboardInboxRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/playground': {
+      id: '/dashboard/playground'
+      path: '/playground'
+      fullPath: '/dashboard/playground'
+      preLoaderRoute: typeof DashboardPlaygroundRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/sources': {
+      id: '/dashboard/sources'
+      path: '/sources'
+      fullPath: '/dashboard/sources'
+      preLoaderRoute: typeof DashboardSourcesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/team': {
+      id: '/dashboard/team'
+      path: '/team'
+      fullPath: '/dashboard/team'
+      preLoaderRoute: typeof DashboardTeamRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/upload': {
+      id: '/dashboard/upload'
+      path: '/upload'
+      fullPath: '/dashboard/upload'
+      preLoaderRoute: typeof DashboardUploadRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/widget': {
+      id: '/dashboard/widget'
+      path: '/widget'
+      fullPath: '/dashboard/widget'
+      preLoaderRoute: typeof DashboardWidgetRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/platform/': {
+      id: '/platform/'
+      path: '/'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof PlatformIndexRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/audit': {
+      id: '/platform/audit'
+      path: '/audit'
+      fullPath: '/platform/audit'
+      preLoaderRoute: typeof PlatformAuditRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/billing': {
+      id: '/platform/billing'
+      path: '/billing'
+      fullPath: '/platform/billing'
+      preLoaderRoute: typeof PlatformBillingRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/communications': {
+      id: '/platform/communications'
+      path: '/communications'
+      fullPath: '/platform/communications'
+      preLoaderRoute: typeof PlatformCommunicationsRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/health': {
+      id: '/platform/health'
+      path: '/health'
+      fullPath: '/platform/health'
+      preLoaderRoute: typeof PlatformHealthRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/subscriptions': {
+      id: '/platform/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/platform/subscriptions'
+      preLoaderRoute: typeof PlatformSubscriptionsRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/usage': {
+      id: '/platform/usage'
+      path: '/usage'
+      fullPath: '/platform/usage'
+      preLoaderRoute: typeof PlatformUsageRouteImport
+      parentRoute: typeof PlatformRoute
     }
     '/platform/organizations/': {
       id: '/platform/organizations/'

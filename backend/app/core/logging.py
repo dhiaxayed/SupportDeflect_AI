@@ -4,6 +4,9 @@ import logging
 import sys
 import time
 import traceback
+from urllib.parse import urlsplit
+
+from app.core.source_urls import redact_source_urls
 
 SENSITIVE_WORDS = ("password", "authorization", "token", "secret", "api_key")
 
@@ -17,7 +20,18 @@ class RedactingFilter(logging.Filter):
         """Inspect the rendered record message and replace sensitive text/arguments in place. Always return True:
         records are sanitized rather than silently discarded.
         """
-        message = record.getMessage().lower()
+        private_message = record.getMessage()
+        if record.name == "uvicorn.access" and isinstance(record.args, tuple) and len(record.args) == 5:
+            client, method, target, version, code = record.args
+            try:
+                target = urlsplit(str(target)).path
+            except ValueError:
+                target = "[private request URL]"
+            record.args = (client, method, target, version, code)
+        original = record.getMessage()
+        rendered = redact_source_urls(original)
+        record.msg, record.args = rendered, ()
+        message = private_message.lower()
         if any(word in message for word in SENSITIVE_WORDS):
             record.msg = "[redacted sensitive log message]"
             record.args = ()

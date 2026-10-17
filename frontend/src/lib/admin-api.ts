@@ -66,6 +66,9 @@ export interface BusinessDashboard {
   days: number;
   currency: Currency;
   channel: string;
+  playground_interactions: number;
+  legacy_interactions: number;
+  estimated_deflection_rate: number | null;
   generated_at: string;
   start: string;
   end: string;

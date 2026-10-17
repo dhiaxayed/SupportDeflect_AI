@@ -10,6 +10,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route } from "@/routes/change-password";
+import { SessionChangedError } from "@/lib/api";
 
 /** Mount the registered password workflow without adding a production export solely for tests. */
 const ChangePassword = Route.options.component as React.ComponentType;
@@ -90,6 +91,28 @@ beforeEach(() => {
 });
 
 describe("invitation password activation", () => {
+  it("preserves a newer account if password reauthentication is superseded", async () => {
+    mocks.change.mockResolvedValue(undefined);
+    mocks.login.mockRejectedValue(new SessionChangedError());
+    show();
+    const user = userEvent.setup();
+    await user.type(
+      screen.getByLabelText("Current password", { exact: true }),
+      "Temporary-fixture-password!",
+    );
+    await user.type(
+      screen.getByLabelText("New password", { exact: true }),
+      "Personal-fixture-password!",
+    );
+    await user.type(
+      screen.getByLabelText("Confirm new password", { exact: true }),
+      "Personal-fixture-password!",
+    );
+    await user.click(screen.getByRole("button", { name: "Save new password" }));
+    await waitFor(() => expect(mocks.login).toHaveBeenCalledOnce());
+    expect(mocks.clearSession).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
   it("exposes expired account errors instead of waiting forever", async () => {
     mocks.account.isError = true;
     mocks.account.error = new Error(
